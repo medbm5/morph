@@ -29,8 +29,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev \
             libxdo-dev libssl-dev libx11-dev libxi-dev libxext-dev libxcb1-dev exiftool
-      - name: Fetch PDFium
-        run: python3 scripts/fetch_pdfium.py
+      - name: Fetch PDFium and FFmpeg, build the Explorer extension
+        shell: bash
+        run: |
+          python3 scripts/fetch_pdfium.py
+          python3 scripts/fetch_ffmpeg.py
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            cargo build -p morph-shell && mkdir -p vendor/shell && cp target/debug/morph_shell.dll vendor/shell/
+          fi
       - name: Format
         run: cargo fmt --all --check
       - name: Clippy

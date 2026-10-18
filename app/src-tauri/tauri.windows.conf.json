@@ -3,7 +3,13 @@
     "resources": {
       "../../vendor/pdfium/windows/pdfium.dll": "pdfium/pdfium.dll",
       "../../vendor/pdfium/windows/PDFIUM-LICENSE.txt": "pdfium/LICENSE.txt",
-      "../../vendor/ffmpeg/windows/*": "sidecars/"
+      "../../vendor/ffmpeg/windows/*": "sidecars/",
+      "../../vendor/shell/morph_shell.dll": "morph_shell.dll"
+    },
+    "windows": {
+      "nsis": {
+        "installerHooks": "windows/hooks.nsh"
+      }
     }
   }
 }
