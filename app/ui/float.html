@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Float</title>
+<link rel="stylesheet" href="hud/tokens.css">
+<link rel="stylesheet" href="hud/panels.css">
+<style>
+html, body { margin: 0; height: 100%; overflow: hidden; user-select: none; }
+body { border: 1px solid var(--hud-line-45); box-sizing: border-box; display: flex; flex-direction: column; }
+.bar { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--hud-line-25); -webkit-app-region: drag; app-region: drag; }
+.bar button { -webkit-app-region: no-drag; app-region: no-drag; }
+.bar .hud-brand { font-size: 11px; letter-spacing: 3px; flex: 1; }
+#items { flex: 1; overflow: auto; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+.item { display: grid; grid-template-columns: 40px 1fr auto; gap: 8px; align-items: center; padding: 6px; border: 1px solid var(--hud-line-25); cursor: grab; background: rgba(4,10,18,.6); }
+.item:hover { border-color: var(--hud-accent); }
+.thumb { width: 40px; height: 40px; background: var(--hud-line-7) center / cover no-repeat; display: grid; place-items: center; font: 600 10px var(--font-readout); color: var(--hud-muted); }
+.name { font: 12px var(--font-readout); color: var(--hud-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.empty { margin: auto; text-align: center; font: 11px var(--font-readout); color: var(--hud-muted); padding: 20px; line-height: 1.6; }
+.drop { outline: 2px dashed var(--hud-accent); outline-offset: -6px; }
+</style>
+</head>
+<body class="hud-grid">
+<div class="bar"><span class="hud-blink" aria-hidden="true"></span><span class="hud-brand">FLOAT</span>
+  <button class="hud-chip" id="all" type="button" title="Drag everything">ALL</button>
+  <button class="hud-chip" id="clear" type="button" title="Clear the shelf">CLEAR</button>
+  <button class="hud-chip" id="close" type="button" title="Hide">✕</button></div>
+<div id="items" aria-live="polite"></div>
+<script src="hud/panels.js"></script>
+<script>
+(() => {
+  const T = window.__TAURI__, h = window.hudEl;
+  const list = document.getElementById('items');
+  let items = [];
+  async function render() {
+    items = await T.core.invoke('float_items');
+    list.textContent = '';
+    if (!items.length) {
+      list.append(h('div', { class: 'empty', text: 'Drop files here to park them.\nDrag them out to any folder or app.' }));
+      return;
+    }
+    items.forEach((it) => {
+      const thumb = h('div', { class: 'thumb', text: it.isDir ? 'DIR' : it.name.split('.').pop().slice(0, 4).toUpperCase() });
+      if (it.image) { thumb.style.backgroundImage = `url("${T.core.convertFileSrc(it.path)}")`; thumb.textContent = ''; }
+      const rm = h('button', { class: 'hud-chip', type: 'button', text: '✕', title: 'Remove from shelf' });
+      rm.addEventListener('click', async (e) => { e.stopPropagation(); await T.core.invoke('float_remove', { paths: [it.path] }); render(); });
+      const row = h('div', { class: 'item', title: it.path }, thumb, h('span', { class: 'name', text: it.name }), rm);
+      // Native drag out (the webview can't start an OS file drag itself).
+      row.addEventListener('pointerdown', (e) => { if (e.button === 0 && e.target !== rm) T.core.invoke('float_drag_out', { paths: [it.path] }); });
+      list.append(row);
+    });
+  }
+  document.getElementById('all').addEventListener('pointerdown', () => { if (items.length) T.core.invoke('float_drag_out', { paths: items.map((i) => i.path) }); });
+  document.getElementById('clear').addEventListener('click', async () => { await T.core.invoke('float_remove', { paths: items.map((i) => i.path) }); render(); });
+  document.getElementById('close').addEventListener('click', () => T.window.getCurrentWindow().hide());
+  T.webview.getCurrentWebview().onDragDropEvent(({ payload: e }) => {
+    if (e.type === 'enter' || e.type === 'over') document.body.classList.add('drop');
+    if (e.type === 'leave') document.body.classList.remove('drop');
+    if (e.type === 'drop') { document.body.classList.remove('drop'); if (e.paths && e.paths.length) T.core.invoke('float_add', { paths: e.paths }).then(render); }
+  });
+  T.event.listen('float://changed', render);
+  render();
+})();
+</script>
+</body>
+</html>
