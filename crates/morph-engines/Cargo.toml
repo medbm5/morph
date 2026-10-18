@@ -10,7 +10,7 @@ rust-version.workspace = true
 
 [features]
 default = ["image", "pdf"]
-image = ["dep:image", "dep:webp", "dep:resvg", "dep:lopdf"]
+image = ["dep:image", "dep:webp", "dep:resvg", "dep:lopdf", "dep:oxipng", "dep:kamadak-exif", "dep:little_exif"]
 pdf = ["image", "dep:pdfium-render", "dep:docx-rs"]
 
 [dependencies]
@@ -24,6 +24,9 @@ webp = { version = "0.3", optional = true, default-features = false }
 resvg = { version = "0.45", optional = true }
 lopdf = { version = "0.38", optional = true }
 pdfium-render = { version = "0.9", optional = true }
+oxipng = { version = "10", optional = true, default-features = false, features = ["parallel"] }
+kamadak-exif = { version = "0.6", optional = true }
+little_exif = { version = "0.6", optional = true }
 docx-rs = { version = "0.4", optional = true }
 flate2 = "1"
 
@@ -40,6 +43,7 @@ windows = { version = "0.62", features = [
 tempfile.workspace = true
 sha2.workspace = true
 hex.workspace = true
-image = { version = "0.25", default-features = false, features = ["png"] }
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp"] }
+little_exif = "0.6"
 lopdf = "0.38"
 zip = { version = "2", default-features = false, features = ["deflate"] }
