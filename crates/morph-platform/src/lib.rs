@@ -5,12 +5,19 @@
 //! Every function has a Windows and a Linux implementation; anything a platform
 //! can't do returns an error rather than panicking.
 
+pub mod actions;
 #[cfg(target_os = "linux")]
 mod linux;
+#[cfg(target_os = "linux")]
+mod linux_clip;
 #[cfg(windows)]
 mod win;
 #[cfg(windows)]
+pub mod win_clip;
+#[cfg(windows)]
 mod win_drop;
+#[cfg(windows)]
+pub mod win_share;
 
 #[cfg(target_os = "linux")]
 use linux as imp;
