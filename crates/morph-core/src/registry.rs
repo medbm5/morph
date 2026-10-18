@@ -86,6 +86,16 @@ impl Registry {
         out
     }
 
+    /// The conversion to `ext` for this selection (`morph convert --to ext`).
+    pub fn converter(&self, ext: &str, kinds: &[Kind]) -> Option<&Arc<dyn Operation>> {
+        self.ops.iter().find(|op| {
+            let s = op.spec();
+            s.ring == Ring::Convert
+                && matches!(&s.output, crate::op::OutputKind::Ext(e) if e == ext)
+                && kinds.iter().all(|k| s.accepts_kind(k))
+        })
+    }
+
     /// Specs for a selection, for the UI and `morph list --for`.
     pub fn specs_for(&self, kinds: &[Kind], ring: Ring) -> Vec<OpSpec> {
         self.for_selection(kinds, ring)

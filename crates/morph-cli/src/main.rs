@@ -37,6 +37,18 @@ enum Command {
         #[arg(trailing_var_arg = true, allow_hyphen_values = true, required = true)]
         rest: Vec<String>,
     },
+    /// Run a tool (compress, crop, metadata, strip…), saved beside each original.
+    #[command(disable_help_flag = true)]
+    Tool {
+        /// Tool name, e.g. compress, crop, strip.
+        name: String,
+        /// Write outputs to this folder instead of beside each source.
+        #[arg(long)]
+        out_dir: Option<PathBuf>,
+        /// Files and tool options (`--target 1MB`, `--ratio 1:1`).
+        #[arg(trailing_var_arg = true, allow_hyphen_values = true, required = true)]
+        rest: Vec<String>,
+    },
     /// List the operations available for some files.
     List {
         /// Files to check.
@@ -68,15 +80,35 @@ fn run(cli: Cli, registry: &Registry) -> Result<bool> {
     match cli.command {
         Command::Convert { to, out_dir, rest } => {
             let to = canonical_ext(&to);
-            let op_id = format!("convert.{to}");
-            let op = registry
-                .get(&op_id)
-                .with_context(|| format!("no conversion to .{to}"))?;
+            // Options depend on the converter, which depends on the input type.
+            let (_files, kinds) = input_files(&rest)?;
+            let op = registry.converter(&to, &kinds).with_context(|| {
+                let labels: Vec<_> = kinds.iter().map(Kind::label).collect();
+                format!("can't convert {} to .{to}", labels.join(", "))
+            })?;
             let (files, params) = args::split(&rest, op.spec())?;
             run_job(
                 registry,
                 Job {
-                    op: op_id,
+                    op: op.spec().id.clone(),
+                    inputs: files,
+                    params,
+                    out_dir,
+                },
+            )
+        }
+        Command::Tool {
+            name,
+            out_dir,
+            rest,
+        } => {
+            let (_files, kinds) = input_files(&rest)?;
+            let op = find_tool(registry, &name, &kinds)?;
+            let (files, params) = args::split(&rest, op.spec())?;
+            run_job(
+                registry,
+                Job {
+                    op: op.spec().id.clone(),
                     inputs: files,
                     params,
                     out_dir,
@@ -92,6 +124,54 @@ fn run(cli: Cli, registry: &Registry) -> Result<bool> {
             Ok(true)
         }
     }
+}
+
+/// Input files among trailing arguments: those that exist or are globs.
+fn input_files(rest: &[String]) -> Result<(Vec<PathBuf>, Vec<Kind>)> {
+    let files = args::expand(
+        rest.iter()
+            .filter(|a| {
+                !a.starts_with("--") && (std::path::Path::new(a).exists() || a.contains(['*', '?']))
+            })
+            .cloned(),
+    )?;
+    if files.is_empty() {
+        anyhow::bail!("no input files");
+    }
+    let kinds = files
+        .iter()
+        .map(|f| detect(f).with_context(|| format!("reading {}", f.display())))
+        .collect::<Result<_>>()?;
+    Ok((files, kinds))
+}
+
+/// Resolve a tool name (`crop`, `compress`, `strip`) for these inputs.
+fn find_tool<'r>(
+    registry: &'r Registry,
+    name: &str,
+    kinds: &[Kind],
+) -> Result<&'r std::sync::Arc<dyn morph_core::Operation>> {
+    let want = name.to_ascii_lowercase().replace([' ', '_'], "-");
+    let candidates = [Ring::Tools, Ring::Actions]
+        .into_iter()
+        .flat_map(|r| registry.for_selection(kinds, r));
+    for op in candidates {
+        let s = op.spec();
+        let short = s.id.rsplit('.').next().unwrap_or(&s.id);
+        let label = s.label.to_ascii_lowercase().replace(' ', "-");
+        if short == want
+            || label == want
+            || s.id == name
+            || label.split('-').next() == Some(want.as_str())
+        {
+            return Ok(op);
+        }
+    }
+    let labels: Vec<_> = kinds.iter().map(Kind::label).collect();
+    anyhow::bail!(
+        "no tool `{name}` for {} files (see `morph list --for <file>`)",
+        labels.join(", ")
+    )
 }
 
 /// Map common aliases to our canonical extensions.
