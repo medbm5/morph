@@ -11,11 +11,14 @@ const ANY: &[&str] = &["*", "folder"];
 
 /// App-side handlers for actions that need a window (Share needs one on Windows,
 /// Float and Move need the UI). The CLI leaves them unset.
+pub type Hook = Arc<dyn Fn(&[PathBuf]) -> Result<()> + Send + Sync>;
+pub type MoveHook = Arc<dyn Fn(&[PathBuf]) -> Result<Vec<PathBuf>> + Send + Sync>;
+
 #[derive(Default, Clone)]
 pub struct Hooks {
-    pub share: Option<Arc<dyn Fn(&[PathBuf]) -> Result<()> + Send + Sync>>,
-    pub float: Option<Arc<dyn Fn(&[PathBuf]) -> Result<()> + Send + Sync>>,
-    pub move_to: Option<Arc<dyn Fn(&[PathBuf]) -> Result<Vec<PathBuf>> + Send + Sync>>,
+    pub share: Option<Hook>,
+    pub float: Option<Hook>,
+    pub move_to: Option<MoveHook>,
 }
 
 pub fn register(reg: &mut Registry, hooks: Hooks) {
