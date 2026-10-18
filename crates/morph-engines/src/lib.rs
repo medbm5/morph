@@ -2,6 +2,8 @@
 //!
 //! Each module registers its operations with a [`morph_core::Registry`].
 
+#[cfg(feature = "archive")]
+pub mod archive;
 #[cfg(feature = "image")]
 pub mod image;
 #[cfg(feature = "media")]
@@ -27,6 +29,8 @@ pub fn register_all(reg: &mut Registry) {
     media::register(reg);
     #[cfg(feature = "office")]
     office::register(reg);
+    #[cfg(feature = "archive")]
+    archive::register(reg);
 }
 
 /// A registry with every built-in operation.
