@@ -44,6 +44,9 @@ pub fn run() {
             commands::history,
             commands::save_recipe,
             commands::open_history,
+            commands::video_info,
+            commands::video_frame,
+            commands::video_strip,
             expanded::expanded_request,
         ])
         .setup(|app| {

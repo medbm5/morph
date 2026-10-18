@@ -518,3 +518,120 @@ pub fn open_history(app: AppHandle) -> Result<(), String> {
     )
     .map_err(|e| format!("{e:#}"))
 }
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VideoInfo {
+    pub duration: f64,
+    pub fps: f64,
+    pub width: u32,
+    pub height: u32,
+    pub has_audio: bool,
+}
+
+#[tauri::command]
+pub async fn video_info(path: PathBuf) -> Result<VideoInfo, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let p = morph_engines::media::ffmpeg::probe(&path).map_err(|e| format!("{e:#}"))?;
+        let v = p.video.clone().unwrap_or_default();
+        Ok(VideoInfo {
+            duration: p.duration,
+            fps: if v.fps > 0.0 { v.fps } else { 30.0 },
+            width: v.width,
+            height: v.height,
+            has_audio: p.audio.is_some(),
+        })
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+fn frame_cache() -> PathBuf {
+    let d = morph_core::components::data_dir()
+        .join("cache")
+        .join("frames");
+    let _ = std::fs::create_dir_all(&d);
+    d
+}
+
+fn cache_key(path: &std::path::Path) -> String {
+    use std::hash::{Hash, Hasher};
+    let mut h = std::collections::hash_map::DefaultHasher::new();
+    path.hash(&mut h);
+    std::fs::metadata(path)
+        .and_then(|m| m.modified())
+        .ok()
+        .hash(&mut h);
+    format!("{:016x}", h.finish())
+}
+
+/// One exact frame at `t` seconds as a JPEG in the cache (the editor's preview).
+#[tauri::command]
+pub async fn video_frame(path: PathBuf, t: f64, width: u32) -> Result<PathBuf, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let out = frame_cache().join(format!("{}-{:.3}-{width}.jpg", cache_key(&path), t));
+        if !out.exists() {
+            let args: Vec<String> = vec![
+                "-ss".into(),
+                format!("{:.3}", t.max(0.0)),
+                "-i".into(),
+                path.to_string_lossy().into_owned(),
+                "-frames:v".into(),
+                "1".into(),
+                "-vf".into(),
+                format!("scale={width}:-2"),
+                "-update".into(),
+                "1".into(),
+                "-q:v".into(),
+                "3".into(),
+                "-f".into(),
+                "image2".into(),
+                out.to_string_lossy().into_owned(),
+            ];
+            morph_engines::media::ffmpeg::run(&args, 0.0, &morph_core::Progress::silent())
+                .map_err(|e| format!("{e:#}"))?;
+        }
+        Ok(out)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// `count` evenly spaced proxy frames for fast scrubbing (one ffmpeg pass).
+#[tauri::command]
+pub async fn video_strip(path: PathBuf, count: u32, width: u32) -> Result<Vec<PathBuf>, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let p = morph_engines::media::ffmpeg::probe(&path).map_err(|e| format!("{e:#}"))?;
+        let dir = frame_cache().join(format!("{}-strip-{count}-{width}", cache_key(&path)));
+        let pattern = dir.join("f%04d.jpg");
+        if !dir.join(".done").exists() {
+            let _ = std::fs::remove_dir_all(&dir);
+            std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+            let rate = count as f64 / p.duration.max(0.1);
+            let args: Vec<String> = vec![
+                "-i".into(),
+                path.to_string_lossy().into_owned(),
+                "-vf".into(),
+                format!("fps={rate:.6},scale={width}:-2"),
+                "-q:v".into(),
+                "5".into(),
+                "-f".into(),
+                "image2".into(),
+                pattern.to_string_lossy().into_owned(),
+            ];
+            morph_engines::media::ffmpeg::run(&args, p.duration, &morph_core::Progress::silent())
+                .map_err(|e| format!("{e:#}"))?;
+            let _ = std::fs::write(dir.join(".done"), "");
+        }
+        let mut frames: Vec<PathBuf> = std::fs::read_dir(&dir)
+            .map_err(|e| e.to_string())?
+            .flatten()
+            .map(|e| e.path())
+            .filter(|p| p.extension().is_some_and(|e| e == "jpg"))
+            .collect();
+        frames.sort();
+        Ok(frames)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
