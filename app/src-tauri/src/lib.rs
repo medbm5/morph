@@ -51,6 +51,7 @@ pub fn run() {
             commands::history,
             commands::save_recipe,
             commands::open_history,
+            commands::show_error,
             commands::video_info,
             commands::video_frame,
             commands::video_strip,
@@ -135,6 +136,7 @@ fn handle_args(app: &tauri::AppHandle, args: &[String], startup: bool) {
             ring: Some(ring),
             paths: files,
             op: None,
+            text: None,
         };
         if let Err(e) = expanded::show(app, req) {
             log::error!("--ring: {e:#}");

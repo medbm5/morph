@@ -521,6 +521,21 @@ pub fn reload_registry_for(app: &AppHandle) {
     *app.state::<AppState>().registry.write().unwrap() = Arc::new(reg);
 }
 
+/// Show a failed job's full message (a recipe command's stderr) in expanded mode.
+#[tauri::command]
+pub fn show_error(app: AppHandle, title: String, text: String) -> Result<(), String> {
+    crate::expanded::show(
+        &app,
+        crate::expanded::Request {
+            mode: "error".into(),
+            op: Some(title),
+            text: Some(text),
+            ..Default::default()
+        },
+    )
+    .map_err(|e| format!("{e:#}"))
+}
+
 #[tauri::command]
 pub fn open_history(app: AppHandle) -> Result<(), String> {
     crate::expanded::show(

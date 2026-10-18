@@ -149,6 +149,7 @@ fn wayland_mode(app: &AppHandle) {
             ring: None,
             paths: Vec::new(),
             op: None,
+            text: None,
         };
         if let Err(e) = crate::expanded::show(app, req) {
             log::warn!("wayland page: {e:#}");

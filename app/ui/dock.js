@@ -66,7 +66,11 @@
         if (ev.event === 'finished') {
           un();
           const done = () => { busy = false; expand(false); };
-          if (errors.length && !saved.length) ring.toast(`<b>${L.t('toast.failed', '✗ FAILED')}</b> · ${esc(errors[0])}`, { error: true, ms: 2600, onHide: done });
+          if (errors.length && !saved.length) {
+            const [head, ...more] = String(errors[0]).split('\n');
+            const actions = more.length ? [{ label: L.t('toast.details', 'DETAILS'), run: () => invoke('show_error', { title: item.label, text: errors.join('\n\n') }) }] : [];
+            ring.toast(`<b>${L.t('toast.failed', '✗ FAILED')}</b> · ${esc(head)}`, { error: true, ms: more.length ? 6000 : 2600, actions, onHide: done });
+          }
           else ring.saved(saved.length === 1 ? base(saved[0]) : `${saved.length || 'DONE'} · ${item.label}`, { delay: 380, ms: 1800, onHide: done });
         }
       });

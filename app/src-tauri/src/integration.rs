@@ -26,6 +26,7 @@ pub fn shortcut_plugin() -> tauri::plugin::TauriPlugin<Wry> {
                 ring: Some("convert".into()),
                 paths,
                 op: None,
+                text: None,
             };
             if let Err(e) = crate::expanded::show(app, req) {
                 log::warn!("hotkey: {e:#}");

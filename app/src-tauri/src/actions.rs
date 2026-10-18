@@ -233,6 +233,7 @@ pub fn clipboard_image(app: &AppHandle) -> Result<PathBuf> {
             paths: vec![path.clone()],
             ring: Some("convert".into()),
             op: None,
+            text: None,
         },
     )?;
     Ok(path)

@@ -9,12 +9,31 @@
 
   let current = null;
 
+  /** A failed job's full message, e.g. a recipe command's stderr. */
+  function showError(req, version) {
+    const L = window.MorphLook;
+    root.classList.add('hud-grid');
+    const frame = h('div', { class: 'hud-frame', style: 'grid-template-columns:1fr;max-width:900px;margin:0 auto' });
+    ['tl', 'tr', 'bl', 'br'].forEach((c) => frame.append(h('span', { class: `hud-corner ${c}`, 'aria-hidden': 'true' })));
+    frame.append(h('header', { class: 'hud-header' },
+      h('span', { class: 'hud-blink', 'aria-hidden': 'true' }), h('span', { class: 'hud-brand', text: 'METAMORPHOSIS' }),
+      h('span', { class: 'hud-mono', text: `// ${L.t('error.title', 'FAILED')} · v${version}` })));
+    const close = h('button', { class: 'hud-btn', type: 'button', text: L.t('error.close', 'CLOSE') });
+    close.addEventListener('click', () => T.window.getCurrentWindow().hide());
+    frame.append(h('section', { class: 'hud-panel' },
+      h('h2', { text: req.op || 'JOB' }),
+      h('pre', { class: 'hud-mono', style: 'white-space:pre-wrap;max-height:60vh;overflow:auto;border:1px solid var(--hud-line-35);padding:12px;user-select:text', text: req.text || '' }),
+      h('div', { class: 'hud-row', style: 'margin-top:12px' }, close)));
+    root.append(frame);
+  }
+
   async function show(req) {
     if (!req) return;
     root.textContent = '';
     const version = await T.app.getVersion();
     if (req.mode === 'components') { window.MorphComponents.show(root, version, req.op); return; }
     if (req.mode === 'history') { window.MorphHistory.show(root, version); return; }
+    if (req.mode === 'error') { showError(req, version); return; }
     if (req.mode === 'settings') { window.MorphSettings.show(root, version); return; }
     if (req.mode === 'wayland') { window.MorphWayland.show(root, version); return; }
     if (req.mode === 'ring') { showRing(req, version); return; }

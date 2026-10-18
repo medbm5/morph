@@ -183,7 +183,12 @@
     const done = job;
     job = null;
     if (done.errors.length && !done.saved.length) {
-      ring.toast(`<b>${L.t('toast.failed', '✗ FAILED')}</b> · ${escapeHtml(done.errors[0])}`, { error: true, ms: 3200, delay: 200, onHide: close });
+      const [head, ...more] = String(done.errors[0]).split('\n');
+      const actions = more.length ? [{
+        label: L.t('toast.details', 'DETAILS'),
+        run: () => { invoke('show_error', { title: (done.item && done.item.label) || 'Job', text: done.errors.join('\n\n') }); close(); },
+      }] : [];
+      ring.toast(`<b>${L.t('toast.failed', '✗ FAILED')}</b> · ${escapeHtml(head)}`, { error: true, ms: more.length ? 6000 : 3200, delay: 200, actions, onHide: close });
       return;
     }
     if (e.cancelled) { ring.toast(`<b>${L.t('toast.cancelled', 'CANCELLED')}</b>`, { ms: 1200, onHide: close }); return; }

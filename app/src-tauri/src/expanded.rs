@@ -16,6 +16,8 @@ pub struct Request {
     pub op: Option<String>,
     pub paths: Vec<PathBuf>,
     pub ring: Option<String>,
+    /// Free text for `error` (a failed job's full message, e.g. a recipe's stderr).
+    pub text: Option<String>,
 }
 
 #[derive(Default)]
@@ -28,7 +30,7 @@ pub fn open(app: &AppHandle, op: &str, paths: &[PathBuf]) -> anyhow::Result<()> 
             mode: "editor".into(),
             op: Some(op.into()),
             paths: paths.to_vec(),
-            ring: None,
+            ..Default::default()
         },
     )
 }
