@@ -2632,7 +2632,7 @@ dependencies = [
 
 [[package]]
 name = "metamorphosis"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "cairo-rs",
@@ -2698,7 +2698,7 @@ dependencies = [
 
 [[package]]
 name = "morph-cli"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -2710,7 +2710,7 @@ dependencies = [
 
 [[package]]
 name = "morph-core"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "dirs 6.0.0",
@@ -2727,7 +2727,7 @@ dependencies = [
 
 [[package]]
 name = "morph-engines"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "docx-rs",
@@ -2754,7 +2754,7 @@ dependencies = [
 
 [[package]]
 name = "morph-input-watch"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "log",
@@ -2765,7 +2765,7 @@ dependencies = [
 
 [[package]]
 name = "morph-platform"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "log",
