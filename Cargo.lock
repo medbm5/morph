@@ -2527,7 +2527,10 @@ version = "0.0.1"
 dependencies = [
  "anyhow",
  "clap",
+ "glob",
  "morph-core",
+ "morph-engines",
+ "serde_json",
 ]
 
 [[package]]

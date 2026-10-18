@@ -1,0 +1,41 @@
+[package]
+name = "morph-engines"
+description = "Conversion and editing engines for Metamorphosis"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+
+[features]
+default = ["image"]
+image = ["dep:image", "dep:webp", "dep:resvg", "dep:lopdf"]
+
+[dependencies]
+morph-core.workspace = true
+anyhow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+log.workspace = true
+image = { version = "0.25", optional = true, default-features = false, features = ["jpeg", "png", "webp", "tiff", "bmp", "gif", "ico", "avif", "rayon"] }
+webp = { version = "0.3", optional = true, default-features = false }
+resvg = { version = "0.45", optional = true }
+lopdf = { version = "0.38", optional = true }
+flate2 = "1"
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.62", features = [
+  "Win32_Foundation",
+  "Win32_Graphics_Imaging",
+  "Win32_System_Com",
+  "Win32_System_Com_StructuredStorage",
+  "Win32_System_Variant",
+] }
+
+[dev-dependencies]
+tempfile.workspace = true
+sha2.workspace = true
+hex.workspace = true
+image = { version = "0.25", default-features = false, features = ["png"] }
+lopdf = "0.38"
