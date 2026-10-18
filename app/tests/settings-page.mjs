@@ -67,39 +67,43 @@ const errors = [];
 page.on('pageerror', (e) => errors.push(e.message));
 await page.addInitScript(mock);
 await page.goto(`${base}/expanded.html`);
-await page.waitForSelector('text=RING LAYOUT');
+await page.waitForSelector('text=WHAT THE RING SHOWS');
 await page.waitForSelector('text=1. JPG');
 
 // Trigger keys: picking a duplicate is rejected by the backend; here we just check it's sent.
-await page.selectOption('select >> nth=1', 'super');
+await page.selectOption('select[aria-label^="Tools"]', 'super');
 await page.waitForTimeout(400);
 check((await page.evaluate(() => window.__settings.keys.tools)) === 'super', 'trigger key change is saved');
 
 // Accent: a dark custom colour triggers the contrast warning.
 await page.$eval('input[type=color]', (i) => { i.value = '#203040'; i.dispatchEvent(new Event('input')); });
-check(await page.isVisible('text=/Low contrast/'), 'low-contrast accent shows a warning');
-await page.click('button:has-text("CYAN")');
+check(await page.isVisible('text=/hard to read/'), 'low-contrast accent shows a warning');
+await page.click('button:has-text("Cyan")');
 await page.waitForTimeout(400);
 check((await page.evaluate(() => window.__settings.accent)) === '#4FE3FF', 'accent preset is saved');
 check((await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--hud-accent').trim().toUpperCase())) === '#4FE3FF', 'accent applies to the page');
 
 // Ring layout: move PNG up, hide WEBP, pin it back… then check the stored layout.
-await page.click('button[aria-label="Move PNG up"]');
+await page.click('button[aria-label="Move up: PNG"]');
 await page.waitForTimeout(400);
-await page.click('div.hud-row:has(> span:text("3. WEBP")) >> text=HIDE');
+await page.click('div.hud-row:has(> span:text("3. WEBP")) >> button:text("Hide")');
 await page.waitForTimeout(400);
 const lay = await page.evaluate(() => window.__settings.layouts['convert:image']);
 check(lay && lay.order[0] === 'image.to-png' && lay.hidden.includes('image.to-webp'), `layout stored (${JSON.stringify(lay)})`);
 
 // Naming preview and conflict policy.
-await page.fill('label:has-text("Tools") input', '{stem} - {op}.{ext}');
-check(await page.isVisible('text=/Page 001 - Cropped\\.jpg/'), 'naming preview follows the template');
-await page.selectOption('label:has-text("When the name is taken") select', 'skip');
+await page.selectOption('select[aria-label="Name of edited files"]', 'custom');
+await page.fill('input[aria-label="Name of edited files"]', '{stem} - {op}.{ext}');
+check(await page.isVisible('text=/photo - Cropped\\.jpg/'), 'naming preview follows a custom name');
+await page.selectOption('select[aria-label="Name of converted files"]', '{stem} {date}.{ext}');
+await page.selectOption('select[aria-label="If a file with that name already exists"]', 'skip');
 await page.waitForTimeout(400);
 check((await page.evaluate(() => window.__settings.naming.conflict)) === 'skip', 'conflict policy is saved');
+check((await page.evaluate(() => window.__settings.naming.convert)) === '{stem} {date}.{ext}', 'naming choice is saved');
+check((await page.evaluate(() => window.__settings.naming.tool)) === '{stem} - {op}.{ext}', 'custom name is saved');
 
 // Watch folders: add one (folder picker mocked), it defaults to Compress.
-await page.click('button:has-text("ADD FOLDER")');
+await page.click('button:has-text("Add a folder")');
 await page.waitForTimeout(400);
 const watch = await page.evaluate(() => window.__settings.watch);
 check(watch && watch.length === 1 && watch[0].op === 'image.compress' && watch[0].out === 'Metamorphosis', `watch folder stored (${JSON.stringify(watch)})`);
@@ -108,9 +112,9 @@ const shot = process.argv.includes('--shot') ? process.argv[process.argv.indexOf
 if (shot) await page.screenshot({ path: shot, fullPage: true });
 
 // French.
-await page.selectOption('label:has-text("Language") select', 'fr');
-await page.waitForSelector('text=DISPOSITION DE L’ANNEAU', { timeout: 3000 }).catch(() => {});
-check(await page.isVisible('text=DISPOSITION DE L’ANNEAU'), 'switching to French re-renders the page');
+await page.selectOption('select[aria-label="Language"]', 'fr');
+await page.waitForSelector('text=CE QUE MONTRE L’ANNEAU', { timeout: 3000 }).catch(() => {});
+check(await page.isVisible('text=CE QUE MONTRE L’ANNEAU'), 'switching to French re-renders the page');
 check((await page.evaluate(() => document.documentElement.lang)) === 'fr', 'document language is fr');
 if (shot) await page.screenshot({ path: shot.replace(/\.png$/, '-fr.png'), fullPage: true });
 

@@ -27,7 +27,7 @@
     const frame = h('div', { class: 'hud-frame' + (opts.wide ? ' is-wide' : '') });
     ['tl', 'tr', 'bl', 'br'].forEach((c) => frame.append(h('span', { class: `hud-corner ${c}`, 'aria-hidden': 'true' })));
 
-    const version = h('span', { class: 'hud-mono', text: `// STAND ACTIVE · v${opts.version || '0.x'}` });
+    const version = h('span', { class: 'hud-mono', text: `v${opts.version || '0.x'}` });
     const headerRight = h('span', { class: 'hud-spacer' });
     const header = h('header', { class: 'hud-header' },
       h('span', { class: 'hud-blink', 'aria-hidden': 'true' }), h('span', { class: 'hud-brand', text: 'METAMORPHOSIS' }), version, headerRight);
@@ -64,7 +64,7 @@
 
     return {
       frame, centre, left, right, tools, header, out,
-      setVersion(v) { version.textContent = `// STAND ACTIVE · v${v}`; },
+      setVersion(v) { version.textContent = `v${v}`; },
       setTarget(t) {
         dl.textContent = '';
         const rows = [['FILE', t.name], ['TYPE', t.type], ['SIZE', t.size], ['DIM', t.dim], ['STATE', t.state || 'ARMED']];

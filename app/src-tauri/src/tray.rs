@@ -22,7 +22,6 @@ fn menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
     )?;
     let float = item("float", "Float shelf", "Étagère flottante")?;
     let dock = item("dock", "Drop dock", "Zone de dépôt")?;
-    let about = item("about", "About Metamorphosis", "À propos de Metamorphosis")?;
     let quit = item("quit", "Quit", "Quitter")?;
     let sep = || PredefinedMenuItem::separator(app);
     Menu::with_items(
@@ -36,8 +35,6 @@ fn menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
             &history,
             &components,
             &settings,
-            &sep()?,
-            &about,
             &sep()?,
             &quit,
         ],
@@ -59,7 +56,6 @@ pub fn create(app: &AppHandle) -> tauri::Result<()> {
         .menu(&menu)
         .show_menu_on_left_click(false)
         .on_menu_event(|app, event| match event.id().as_ref() {
-            "about" => crate::show_window(app, "about"),
             "undo" => match crate::commands::undo_last() {
                 Ok(Some(what)) => log::info!("undone: {what}"),
                 Ok(None) => log::info!("nothing to undo"),
@@ -97,7 +93,7 @@ pub fn create(app: &AppHandle) -> tauri::Result<()> {
                 ..
             } = event
             {
-                crate::show_window(tray.app_handle(), "about");
+                let _ = crate::settings::open_settings(tray.app_handle().clone());
             }
         })
         .build(app)?;

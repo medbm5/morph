@@ -106,14 +106,14 @@ pub fn run() {
         } = event
         {
             // Last window closed: keep running in the background.
+            let _ = handle;
             api.prevent_exit();
-            let _ = handle.get_webview_window("about").map(|w| w.hide());
         }
     });
 }
 
 /// Act on command-line arguments, at startup or forwarded from a second launch:
-/// `--open <op> <files…>`, `--ring <ring> <files…>`, `--background`.
+/// `--open <op> <files…>`, `--ring <ring> <files…>`; `--background` is accepted and is the default.
 fn handle_args(app: &tauri::AppHandle, args: &[String], startup: bool) {
     if args.iter().any(|a| a == "--uninstall-menus") {
         // Used by the uninstaller and by users who prefer no context-menu entries.
@@ -145,16 +145,9 @@ fn handle_args(app: &tauri::AppHandle, args: &[String], startup: bool) {
         if let Err(e) = expanded::show(app, req) {
             log::error!("--ring: {e:#}");
         }
-    } else if !(startup && args.iter().any(|a| a == "--background")) {
-        show_window(app, "about");
-    }
-}
-
-/// Show a window by label and bring it to the front.
-pub(crate) fn show_window(app: &tauri::AppHandle, label: &str) {
-    if let Some(w) = app.get_webview_window(label) {
-        let _ = w.unminimize();
-        let _ = w.show();
-        let _ = w.set_focus();
+    } else if !startup {
+        // Launched again while running (Start menu, desktop icon): open Settings.
+        // The first launch stays in the tray; the app only works in the background.
+        let _ = settings::open_settings(app.clone());
     }
 }
