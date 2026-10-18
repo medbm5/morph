@@ -82,7 +82,7 @@ fn share(app: &AppHandle, paths: &[PathBuf]) -> Result<()> {
                 .and_then(|h| morph_platform::win_share::share(h, &paths));
             let _ = tx.send(r.map_err(|e| format!("{e:#}")));
         })?;
-        return rx.recv().context("share")?.map_err(|e| anyhow::anyhow!(e));
+        rx.recv().context("share")?.map_err(|e| anyhow::anyhow!(e))
     }
     #[cfg(not(windows))]
     {

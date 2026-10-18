@@ -268,7 +268,7 @@ mod tests {
     #[test]
     fn helpers() {
         let d = std::env::temp_dir();
-        assert_eq!(terminal_dir(&[d.clone()]), d);
+        assert_eq!(terminal_dir(std::slice::from_ref(&d)), d);
         assert_eq!(terminal_dir(&[d.join("x.txt")]), d);
         assert_eq!(
             paths_text(&[PathBuf::from("a"), PathBuf::from("b")]),
