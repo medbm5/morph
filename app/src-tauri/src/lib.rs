@@ -1,13 +1,41 @@
 //! Metamorphosis desktop shell: tray icon, windows and the HUD ring overlay.
 
+mod commands;
+mod expanded;
+#[cfg(target_os = "linux")]
+mod linux_shape;
+mod logger;
+mod overlay;
+mod state;
 mod tray;
 
+use state::AppState;
 use tauri::{Manager, RunEvent, WindowEvent};
 
 pub fn run() {
+    logger::init();
+    log::info!("Metamorphosis {} starting", morph_core::VERSION);
+    let registry = morph_engines::registry();
     let app = tauri::Builder::default()
+        .manage(AppState::new(registry))
+        .manage(expanded::Pending::default())
+        .invoke_handler(tauri::generate_handler![
+            commands::ring_items,
+            commands::run_op,
+            commands::cancel_job,
+            commands::hide_ring,
+            commands::ring_shown,
+            commands::reveal,
+            commands::open_editor,
+            commands::op_spec,
+            commands::describe,
+            commands::trace,
+            expanded::expanded_request,
+        ])
         .setup(|app| {
             tray::create(app.handle())?;
+            overlay::create(app.handle())?;
+            overlay::start_watcher(app.handle());
             // Autostart launches with --background: stay in the tray.
             if !std::env::args().any(|a| a == "--background") {
                 show_window(app.handle(), "about");

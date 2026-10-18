@@ -17,7 +17,16 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 morph-core.workspace = true
-tauri = { version = "2", features = ["tray-icon", "image-png"] }
+morph-engines.workspace = true
+morph-input-watch.workspace = true
+morph-platform.workspace = true
+log.workspace = true
+tauri = { version = "2", features = ["tray-icon", "image-png", "protocol-asset"] }
 serde.workspace = true
 serde_json.workspace = true
 anyhow.workspace = true
+
+[target.'cfg(target_os = "linux")'.dependencies]
+gtk = "0.18"
+gdk = "0.18"
+cairo-rs = "0.18"

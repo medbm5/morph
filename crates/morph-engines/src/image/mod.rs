@@ -165,3 +165,13 @@ impl Operation for ToPdf {
 pub fn is_output(ext: &str) -> bool {
     encode::OUTPUTS.contains(&ext)
 }
+
+/// Width and height from the file header, without decoding pixels.
+pub fn probe_size(path: &std::path::Path) -> Option<(u32, u32)> {
+    ::image::ImageReader::open(path)
+        .ok()?
+        .with_guessed_format()
+        .ok()?
+        .into_dimensions()
+        .ok()
+}

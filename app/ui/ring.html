@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Metamorphosis ring</title>
+<link rel="stylesheet" href="hud/tokens.css">
+<link rel="stylesheet" href="hud/ring.css">
+<style>
+html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: transparent; user-select: none; }
+#ring { position: absolute; inset: 0; display: grid; place-items: center; }
+#ring > .hud { width: 100vmin; height: 100vmin; }
+/* X11 without a compositor: the window is shaped to a circle; give it an opaque backdrop. */
+.no-compositor body { background: radial-gradient(circle closest-side, #04070C 99%, transparent 100%); }
+</style>
+</head>
+<body>
+<div id="ring"><div id="host"></div></div>
+<script src="hud/ring.js"></script>
+<script src="overlay.js"></script>
+</body>
+</html>
