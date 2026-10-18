@@ -129,13 +129,25 @@ pub fn reveal(path: &Path) -> Result<()> {
 
 /// Selected items of the Explorer window (active tab) or desktop under (x, y).
 pub fn selection_at(x: i32, y: i32) -> Result<Vec<PathBuf>> {
+    let under = unsafe { WindowFromPoint(POINT { x, y }) };
+    if under.is_invalid() {
+        return Ok(vec![]);
+    }
+    selection_of_window(unsafe { GetAncestor(under, GA_ROOT) })
+}
+
+/// Selected items of the foreground Explorer window (keyboard hotkey).
+pub fn selection_foreground() -> Result<Vec<PathBuf>> {
+    let fg = unsafe { GetForegroundWindow() };
+    if fg.is_invalid() {
+        return Ok(vec![]);
+    }
+    selection_of_window(fg)
+}
+
+fn selection_of_window(root: HWND) -> Result<Vec<PathBuf>> {
     unsafe {
         let _ = CoInitializeEx(None, COINIT_APARTMENTTHREADED);
-        let under = WindowFromPoint(POINT { x, y });
-        if under.is_invalid() {
-            return Ok(vec![]);
-        }
-        let root = GetAncestor(under, GA_ROOT);
         let class = class_name(root);
         let windows: IShellWindows = CoCreateInstance(&ShellWindows, None, CLSCTX_ALL)?;
 
