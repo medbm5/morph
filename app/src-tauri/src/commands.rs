@@ -361,3 +361,68 @@ pub async fn compose_preview(
     .await
     .map_err(|e| e.to_string())?
 }
+
+/// Faces and/or text found locally in an image (Redact editor's "Detect").
+#[tauri::command]
+pub async fn detect_regions(
+    path: PathBuf,
+    faces: bool,
+    text: bool,
+) -> Result<Vec<morph_engines::ml::Region>, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let kind = detect(&path).map_err(|e| e.to_string())?;
+        let img =
+            morph_engines::image::decode::decode(&path, &kind).map_err(|e| format!("{e:#}"))?;
+        let mut p = Params::new();
+        let auto = match (faces, text) {
+            (true, true) => "faces+text",
+            (true, false) => "faces",
+            (false, true) => "text",
+            _ => "none",
+        };
+        p.set("auto", auto);
+        morph_engines::ml::ops::redact_regions(&img, &p).map_err(|e| format!("{e:#}"))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// Optional components and whether they are installed.
+#[tauri::command]
+pub fn components_status() -> Vec<morph_updater::Status> {
+    morph_updater::status()
+}
+
+/// Download, verify and install a component; progress arrives as `component://progress`.
+#[tauri::command]
+pub async fn install_component(app: AppHandle, name: String) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let emitter = app.clone();
+        let n = name.clone();
+        let r = morph_updater::install(&name, &move |done, total, _| {
+            let _ = emitter.emit(
+                "component://progress",
+                serde_json::json!({ "name": n, "done": done, "total": total }),
+            );
+        })
+        .map_err(|e| format!("{e:#}"));
+        let _ = app.emit("component://changed", &name);
+        r
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// Show the components screen (from an INSTALL COMPONENT segment).
+#[tauri::command]
+pub fn open_components(app: AppHandle, focus: Option<String>) -> Result<(), String> {
+    crate::expanded::show(
+        &app,
+        crate::expanded::Request {
+            mode: "components".into(),
+            op: focus,
+            ..Default::default()
+        },
+    )
+    .map_err(|e| format!("{e:#}"))
+}

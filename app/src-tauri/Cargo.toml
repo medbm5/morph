@@ -20,6 +20,7 @@ morph-core.workspace = true
 morph-engines.workspace = true
 morph-input-watch.workspace = true
 morph-platform.workspace = true
+morph-updater.workspace = true
 log.workspace = true
 tauri = { version = "2", features = ["tray-icon", "image-png", "protocol-asset"] }
 serde.workspace = true

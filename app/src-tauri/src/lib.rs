@@ -33,6 +33,10 @@ pub fn run() {
             commands::image_size,
             commands::trace,
             commands::compose_preview,
+            commands::detect_regions,
+            commands::components_status,
+            commands::install_component,
+            commands::open_components,
             expanded::expanded_request,
         ])
         .setup(|app| {

@@ -143,7 +143,9 @@
     trace(`apply ${item && item.id} on ${onPaths.length}`);
     if (!item || !onPaths.length) return;
     if (item.disabled) {
-      ring.toast(`<b>INSTALL COMPONENT</b> · ${item.component || item.label}`, { error: true, ms: 2400, onHide: close });
+      // Missing optional component: open the installer instead of failing.
+      invoke('open_components', { focus: item.component || null });
+      ring.toast(`<b>INSTALL COMPONENT</b> · ${item.component || item.label}`, { ms: 1400, onHide: close });
       return;
     }
     if (item.editor) {
