@@ -2,6 +2,7 @@
 
 mod actions;
 mod commands;
+mod dock;
 mod expanded;
 mod integration;
 #[cfg(target_os = "linux")]
@@ -61,6 +62,7 @@ pub fn run() {
             actions::float_remove,
             actions::float_drag_out,
             expanded::expanded_request,
+            dock::dock_expand,
         ])
         .setup(|app| {
             // The registry needs the app handle (actions use its windows).

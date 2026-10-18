@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Metamorphosis dock</title>
+<link rel="stylesheet" href="hud/tokens.css">
+<link rel="stylesheet" href="hud/ring.css">
+<style>
+html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: transparent; user-select: none; }
+#idle { position: absolute; inset: 6px; border-radius: 50%; display: grid; place-items: center; text-align: center;
+  background: var(--hud-core); border: 2px solid var(--hud-line); box-shadow: 0 0 14px rgba(79,227,255,.45);
+  font: 700 11px var(--font-label); letter-spacing: 2px; color: var(--hud-line); cursor: default; }
+#idle small { display: block; font: 9px var(--font-readout); letter-spacing: 1px; color: var(--hud-muted); margin-top: 2px; }
+#idle::after { content: ""; position: absolute; inset: -6px; border-radius: 50%; border: 1px dashed rgba(79,227,255,.5); animation: spin 18s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { #idle::after { animation: none; } }
+#big { position: absolute; inset: 0; display: none; }
+#tabs { position: absolute; top: 4px; left: 0; right: 0; display: flex; justify-content: center; gap: 6px; z-index: 2; }
+#tabs span { font: 600 10px var(--font-readout); letter-spacing: 2px; padding: 5px 9px; border: 1px solid var(--hud-line-35); background: var(--hud-core); color: var(--hud-text); }
+#tabs span.on { border-color: var(--hud-accent); color: var(--hud-accent); }
+#host { position: absolute; inset: 30px 0 0 0; display: grid; place-items: center; }
+#host > .hud { width: min(100vw, calc(100vh - 30px)); }
+.expanded #idle { display: none; }
+.expanded #big { display: block; }
+</style>
+</head>
+<body>
+<div id="idle" aria-label="Metamorphosis drop dock">DROP<small>FILES HERE</small></div>
+<div id="big"><div id="tabs" role="tablist"></div><div id="host"></div></div>
+<script src="hud/ring.js"></script>
+<script src="dock.js"></script>
+</body>
+</html>

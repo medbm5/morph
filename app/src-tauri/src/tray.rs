@@ -16,6 +16,7 @@ pub fn create(app: &AppHandle) -> tauri::Result<()> {
         None::<&str>,
     )?;
     let float = MenuItem::with_id(app, "float", "Float shelf", true, None::<&str>)?;
+    let dock = MenuItem::with_id(app, "dock", "Drop dock", true, None::<&str>)?;
     let about = MenuItem::with_id(app, "about", "About Metamorphosis", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
     let sep = || PredefinedMenuItem::separator(app);
@@ -24,6 +25,7 @@ pub fn create(app: &AppHandle) -> tauri::Result<()> {
         &[
             &clip,
             &float,
+            &dock,
             &sep()?,
             &undo,
             &history,
@@ -57,6 +59,11 @@ pub fn create(app: &AppHandle) -> tauri::Result<()> {
             }
             "float" => {
                 let _ = crate::actions::add_to_shelf(app, &[]);
+            }
+            "dock" => {
+                if let Err(e) = crate::dock::show(app) {
+                    log::warn!("dock: {e:#}");
+                }
             }
             "components" => {
                 let _ = crate::commands::open_components(app.clone(), None);
