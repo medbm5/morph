@@ -10,3 +10,4 @@ Thumbs.db
 .vscode/
 .idea/
 /vendor/
+/app/src-tauri/tauri.signing.conf.json

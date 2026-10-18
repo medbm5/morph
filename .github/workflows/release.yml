@@ -49,6 +49,23 @@ jobs:
       - name: Install Tauri CLI
         working-directory: app
         run: npm ci
+      - name: Import the code-signing certificate
+        id: sign
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          CERT: ${{ secrets.WINDOWS_CERTIFICATE }}
+          CERT_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        run: |
+          if (-not $env:CERT) { Write-Host "No certificate secret: installers stay unsigned."; "args=" >> $env:GITHUB_OUTPUT; exit 0 }
+          $pfx = Join-Path $env:RUNNER_TEMP cert.pfx
+          [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:CERT))
+          $pw = ConvertTo-SecureString $env:CERT_PASSWORD -AsPlainText -Force
+          $cert = Import-PfxCertificate -FilePath $pfx -CertStoreLocation Cert:\CurrentUser\My -Password $pw
+          Remove-Item $pfx
+          @{ bundle = @{ windows = @{ certificateThumbprint = $cert.Thumbprint; digestAlgorithm = 'sha256'; timestampUrl = 'http://timestamp.digicert.com' } } } |
+            ConvertTo-Json -Depth 5 | Set-Content -Encoding utf8 app/src-tauri/tauri.signing.conf.json
+          "args=--config src-tauri/tauri.signing.conf.json" >> $env:GITHUB_OUTPUT
       - name: Build app and publish installers
         uses: tauri-apps/tauri-action@v0
         env:
@@ -56,11 +73,19 @@ jobs:
         with:
           projectPath: app
           tauriScript: npx tauri
-          args: --bundles ${{ matrix.bundles }}
+          args: --bundles ${{ matrix.bundles }} ${{ steps.sign.outputs.args }}
           tagName: ${{ github.ref_name }}
           releaseName: Metamorphosis ${{ github.ref_name }}
           releaseBody: See the assets below to install Metamorphosis on Windows or Linux.
           releaseDraft: false
+      - name: AppImage delta updates (zsync)
+        if: runner.os == 'Linux'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          img=$(ls target/release/bundle/appimage/*.AppImage)
+          bash scripts/appimage_zsync.sh "$img" "${{ github.repository_owner }}"
+          gh release upload "${{ github.ref_name }}" "$img" "$img.zsync" --clobber
       - name: Build morph CLI
         run: cargo build --release -p morph-cli
       - name: Upload morph CLI
@@ -72,3 +97,60 @@ jobs:
           cp vendor/pdfium/*/*pdfium* cli/
           cd cli && 7z a ../${{ matrix.cli_asset }}.zip . >/dev/null 2>&1 || zip -r ../${{ matrix.cli_asset }}.zip .
           cd .. && gh release upload "${{ github.ref_name }}" ${{ matrix.cli_asset }}.zip --clobber
+
+  packaging:
+    name: Store manifests
+    needs: build
+    runs-on: ubuntu-22.04
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Render winget, Flathub and AUR manifests
+        run: |
+          mkdir -p dist
+          gh release download "${{ github.ref_name }}" -D dist -p '*.msi' -p '*-setup.exe' -p '*.deb' -p 'morph-linux-x86_64.zip'
+          python3 scripts/render_packaging.py --version "${{ github.ref_name }}" --owner "${{ github.repository_owner }}" --assets dist --out packaging-out
+          (cd packaging-out && zip -r ../packaging.zip .)
+          gh release upload "${{ github.ref_name }}" packaging.zip --clobber
+      - uses: actions/upload-artifact@v4
+        with:
+          name: packaging
+          path: packaging-out
+
+  winget:
+    name: Publish to winget
+    needs: packaging
+    runs-on: windows-latest
+    env:
+      WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+    steps:
+      - name: Submit with Komac
+        if: env.WINGET_TOKEN != ''
+        uses: vedantmgoyal9/winget-releaser@v2
+        with:
+          identifier: ${{ github.repository_owner }}.Metamorphosis
+          installers-regex: '(_x64_en-US\.msi|_x64-setup\.exe)$'
+          token: ${{ secrets.WINGET_TOKEN }}
+
+  aur:
+    name: Publish morph-bin to AUR
+    needs: packaging
+    runs-on: ubuntu-22.04
+    env:
+      AUR_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: packaging
+          path: packaging-out
+      - name: Push PKGBUILD
+        if: env.AUR_KEY != ''
+        uses: KSXGitHub/github-actions-deploy-aur@v4.1.1
+        with:
+          pkgname: morph-bin
+          pkgbuild: packaging-out/aur/PKGBUILD
+          commit_username: ${{ github.repository_owner }}
+          commit_email: ${{ github.repository_owner }}@users.noreply.github.com
+          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          commit_message: Update to ${{ github.ref_name }}
