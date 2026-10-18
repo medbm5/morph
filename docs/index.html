@@ -7,8 +7,15 @@
   <meta name="description" content="Metamorphosis: free, open-source drag-to-convert for Windows and Linux. Drag a file, tap Shift, drop it on a holographic ring. Offline, non-destructive.">
   <meta name="color-scheme" content="light dark">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <!-- Replace with a 1200×630 PNG before launch -->
-  <!-- <meta property="og:image" content="https://YOUR-GITHUB-USER.github.io/morph/assets/og.png"> -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Metamorphosis — drag, tap a key, drop on the ring">
+  <meta property="og:description" content="Free, open-source drag-to-convert for Windows and Linux. Offline and non-destructive.">
+  <meta property="og:url" content="https://medbm5.github.io/morph/">
+  <meta property="og:image" content="https://medbm5.github.io/morph/assets/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="The Metamorphosis ring with conversion targets around a JPG">
+  <meta name="twitter:card" content="summary_large_image">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
@@ -42,7 +49,7 @@
         <button class="theme-toggle" type="button" aria-label="Switch color theme" title="Switch color theme">
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z" fill="currentColor"/></svg>
         </button>
-        <a class="btn btn-quiet" href="https://github.com/YOUR-GITHUB-USER/morph">GitHub</a>
+        <a class="btn btn-quiet" href="https://github.com/medbm5/morph">GitHub</a>
       </div>
     </div>
   </header>
@@ -56,7 +63,7 @@
           <p class="lede">Metamorphosis converts and edits files from a holographic ring that opens under your cursor, mid-drag. For Windows and Linux. Free, open source, and completely offline — your original is never touched.</p>
           <div class="cta-row">
             <a class="btn btn-primary" href="#install">Install Metamorphosis</a>
-            <a class="btn btn-quiet" href="https://github.com/YOUR-GITHUB-USER/morph">View source</a>
+            <a class="btn btn-quiet" href="https://github.com/medbm5/morph">View source</a>
           </div>
           <p class="fineprint">Windows 10 22H2+ and 11 · Linux X11 (full) and Wayland (drop dock)</p>
         </div>
@@ -172,19 +179,31 @@
 
         <div class="media-grid">
           <figure>
-            <img src="assets/demo-convert.svg" width="960" height="600" alt="Converting a PDF to PNG by dropping it on the ring" loading="lazy">
+            <picture>
+              <source srcset="assets/demo-convert.png" media="(prefers-reduced-motion: reduce)">
+              <img src="assets/demo-convert.webp" width="960" height="600" alt="Converting a PDF to PNG by dropping it on the ring" loading="lazy">
+            </picture>
             <figcaption>Convert a PDF to images</figcaption>
           </figure>
           <figure>
-            <img src="assets/demo-tools.svg" width="960" height="600" alt="Adding a gradient background to a screenshot" loading="lazy">
+            <picture>
+              <source srcset="assets/demo-tools.png" media="(prefers-reduced-motion: reduce)">
+              <img src="assets/demo-tools.webp" width="960" height="600" alt="Adding a background to a screenshot from the Tools ring" loading="lazy">
+            </picture>
             <figcaption>Add a background to a screenshot</figcaption>
           </figure>
           <figure>
-            <img src="assets/demo-chain.svg" width="960" height="600" alt="Chaining PDF to JPG to crop to background" loading="lazy">
+            <picture>
+              <source srcset="assets/demo-chain.png" media="(prefers-reduced-motion: reduce)">
+              <img src="assets/demo-chain.webp" width="960" height="600" alt="Chaining PDF to JPG to crop to background" loading="lazy">
+            </picture>
             <figcaption>Chain steps into a recipe</figcaption>
           </figure>
           <figure>
-            <img src="assets/demo-actions.svg" width="960" height="600" alt="Parking files on the Float shelf" loading="lazy">
+            <picture>
+              <source srcset="assets/demo-actions.png" media="(prefers-reduced-motion: reduce)">
+              <img src="assets/demo-actions.webp" width="960" height="600" alt="Parking files on the Float shelf" loading="lazy">
+            </picture>
             <figcaption>Park files on the Float shelf</figcaption>
           </figure>
         </div>
@@ -210,7 +229,7 @@
             </div>
             <div class="method">
               <h3>MSI installer</h3>
-              <p>Download <code>Metamorphosis_x.y.z_x64_en-US.msi</code> from the <a href="https://github.com/YOUR-GITHUB-USER/morph/releases/latest">latest release</a> and run it. A portable <code>.zip</code> is there too.</p>
+              <p>Download <code>Metamorphosis_x.y.z_x64_en-US.msi</code> from the <a href="https://github.com/medbm5/morph/releases/latest">latest release</a> and run it. For a portable copy, turn on portable mode in Settings.</p>
             </div>
             <p class="note">Windows 10 22H2 or later, x64. If SmartScreen warns about a new publisher, check the release checksum first.</p>
           </div>
@@ -218,7 +237,7 @@
           <div class="tab-panel" role="tabpanel" id="panel-linux" aria-labelledby="tab-linux">
             <div class="method">
               <h3>Flathub</h3>
-              <div class="code"><pre><code>flatpak install flathub io.github.YOUR-GITHUB-USER.morph</code></pre><button class="copy" type="button">Copy</button></div>
+              <div class="code"><pre><code>flatpak install flathub io.github.medbm5.morph</code></pre><button class="copy" type="button">Copy</button></div>
             </div>
             <div class="method">
               <h3>AppImage</h3>
@@ -227,13 +246,13 @@
             </div>
             <div class="method">
               <h3>Debian and Ubuntu (.deb)</h3>
-              <div class="code"><pre><code>sudo apt install ./morph_x.y.z_amd64.deb</code></pre><button class="copy" type="button">Copy</button></div>
+              <div class="code"><pre><code>sudo apt install ./Metamorphosis_x.y.z_amd64.deb</code></pre><button class="copy" type="button">Copy</button></div>
             </div>
             <div class="method">
               <h3>Arch Linux (AUR)</h3>
               <div class="code"><pre><code>yay -S morph-bin</code></pre><button class="copy" type="button">Copy</button></div>
             </div>
-            <p class="note">Files for AppImage and .deb are on the <a href="https://github.com/YOUR-GITHUB-USER/morph/releases/latest">releases page</a>. On X11 you get the full drag-and-tap experience. On Wayland, read the next section first.</p>
+            <p class="note">Files for AppImage and .deb are on the <a href="https://github.com/medbm5/morph/releases/latest">releases page</a>. On X11 you get the full drag-and-tap experience. On Wayland, read the next section first.</p>
           </div>
         </div>
       </div>
@@ -263,7 +282,10 @@
           </table>
         </div>
         <figure class="wayland-shot">
-          <img src="assets/screenshot-wayland-dock.svg" width="960" height="600" alt="The drop dock at the right edge of a GNOME desktop" loading="lazy">
+          <picture>
+              <source srcset="assets/wayland-dock.png" media="(prefers-reduced-motion: reduce)">
+              <img src="assets/wayland-dock.webp" width="960" height="600" alt="The drop dock at the right edge of a Wayland desktop, opened into the Tools ring" loading="lazy">
+            </picture>
         </figure>
       </div>
     </section>
@@ -327,10 +349,10 @@
     <div class="wrap footer-row">
       <p>Metamorphosis (<code>morph</code>) is free and open source.</p>
       <ul class="footer-links">
-        <li><a href="https://github.com/YOUR-GITHUB-USER/morph">Source code</a></li>
-        <li><a href="https://github.com/YOUR-GITHUB-USER/morph/releases">Releases</a></li>
-        <li><a href="https://github.com/YOUR-GITHUB-USER/morph/issues">Report a bug</a></li>
-        <li><a href="https://github.com/YOUR-GITHUB-USER/morph/blob/main/README.md">Roadmap</a></li>
+        <li><a href="https://github.com/medbm5/morph">Source code</a></li>
+        <li><a href="https://github.com/medbm5/morph/releases">Releases</a></li>
+        <li><a href="https://github.com/medbm5/morph/issues">Report a bug</a></li>
+        <li><a href="https://github.com/medbm5/morph/blob/main/README.md">Roadmap</a></li>
       </ul>
       <p class="disclaimer">Not affiliated with Tangerine or Leap Studio, Philip Glass, or JoJo’s Bizarre Adventure. All product names belong to their owners.</p>
     </div>

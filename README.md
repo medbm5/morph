@@ -12,7 +12,7 @@ morph convert --to jpg file.pdf
 
 > Metamorphosis is an independent open-source project inspired by the drag-to-convert interaction of Tangerine for Mac. It is not affiliated with Tangerine or Leap Studio and uses none of their name, logo, icons, art or code. The name is a nod to Philip Glass's album *Metamorphosis*, in the tradition of JoJo's Bizarre Adventure Stands named after songs and albums; it is not affiliated with either.
 
-[Website](https://YOUR-GITHUB-USER.github.io/morph/) · [Build plan](BUILD_PLAN.md) · [Feature audit](FEATURE_AUDIT.md) · [Releases](https://github.com/YOUR-GITHUB-USER/morph/releases)
+[Website](https://medbm5.github.io/morph/) · [Build plan](BUILD_PLAN.md) · [Feature audit](FEATURE_AUDIT.md) · [Releases](https://github.com/medbm5/morph/releases)
 
 ---
 
@@ -275,7 +275,7 @@ Drop dock (HUD-styled), GlobalShortcuts portal, layer-shell overlay where suppor
 
 ### S18 — Settings, customization and distribution
 Settings (expanded mode): trigger keys, accent colour (presets + custom with contrast check), motion (full / reduced / follow system), ring layout (reorder, pin, hide per type), naming template, conflict policy, job history, autostart, language (EN/FR first), portable mode (Windows). Distribution: signed MSI, winget manifest (moniker `morph`), AppImage with zsync updates, .deb, Flathub, AUR (`morph-bin`).
-**Done when:** `winget install morph`, `flatpak install flathub io.github.YOUR-GITHUB-USER.morph` and `yay -S morph-bin` all install a working build; settings (including accent) survive upgrades.
+**Done when:** `winget install morph`, `flatpak install flathub io.github.medbm5.morph` and `yay -S morph-bin` all install a working build; settings (including accent) survive upgrades.
 
 ### S19 — Extensibility: recipes, watch folders, plugins
 User recipes in TOML wrapping any local command (inputs, outputs, parameters → UI), watch folders that apply a recipe, documented `Operation` trait for engine crates.
