@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Site media scene</title>
+<link rel="stylesheet" href="../../ui/hud/tokens.css">
+<link rel="stylesheet" href="../../ui/hud/ring.css">
+<style>
+/* A generic desktop: wallpaper, a file window, a cursor. Rendered with the real ring. */
+html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; }
+body { background: radial-gradient(120% 90% at 20% 10%, #23364a 0%, #111b26 55%, #0a1118 100%); font: 13px system-ui, "Segoe UI", sans-serif; color: #dfe6ee; }
+.win { position: absolute; background: #1d242c; border: 1px solid #39434e; border-radius: 8px; box-shadow: 0 18px 50px rgba(0,0,0,.5); overflow: hidden; }
+.win .bar { height: 30px; background: #262e37; display: flex; align-items: center; padding: 0 10px; gap: 7px; color: #9aa7b4; font-size: 12px; }
+.win .bar i { width: 10px; height: 10px; border-radius: 50%; background: #3d4853; display: inline-block; }
+.win .bar span { margin-left: 8px; }
+.files { display: grid; grid-template-columns: repeat(3, 92px); gap: 14px 10px; padding: 18px; }
+.file { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 6px 4px; border-radius: 6px; text-align: center; font-size: 11.5px; line-height: 1.25; transition: background .15s, opacity .3s, transform .3s; }
+.file.sel { background: rgba(79, 160, 255, .28); }
+.file.new { animation: pop .45s cubic-bezier(.2,1.4,.4,1) both; }
+@keyframes pop { from { transform: scale(.4); opacity: 0; } }
+.icon { width: 44px; height: 54px; border-radius: 4px; position: relative; background: #e9edf1; box-shadow: 0 2px 4px rgba(0,0,0,.35); }
+.icon::before { content: ""; position: absolute; right: 0; top: 0; border-width: 0 12px 12px 0; border-style: solid; border-color: #1d242c #1d242c #c2cad3 #c2cad3; }
+.icon b { position: absolute; left: 4px; right: 4px; bottom: 6px; font: 700 9px system-ui; color: #fff; border-radius: 2px; padding: 2px 0; text-align: center; }
+.t-pdf b { background: #d6453d; } .t-png b { background: #2f86d6; } .t-jpg b { background: #2fa36b; } .t-txt b { background: #6c7a89; } .t-mp4 b { background: #8a4fd6; }
+.icon.thumb { background: linear-gradient(135deg, #7cc4ff, #2a5f9e 60%, #f5b26b); }
+#ghost { position: absolute; pointer-events: none; opacity: 0; transform: translate(-50%, -70%); transition: opacity .15s; z-index: 5; }
+#ghost .stack { position: relative; }
+#ghost .icon { opacity: .9; }
+#ghost .count { position: absolute; right: -8px; top: -8px; background: #2f86d6; color: #fff; font: 700 11px system-ui; border-radius: 10px; padding: 1px 6px; }
+#cursor { position: absolute; width: 22px; height: 30px; z-index: 20; pointer-events: none; transform: translate(-3px, -2px); filter: drop-shadow(0 1px 1px rgba(0,0,0,.6)); }
+#ringhost { position: absolute; width: 440px; transform: translate(-50%, -50%); z-index: 10; display: none; }
+#key { position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(20px); opacity: 0; transition: opacity .2s, transform .2s; z-index: 30;
+  font: 700 15px var(--font-label); letter-spacing: 3px; color: #0c141c; background: #e9edf1; border-radius: 7px; padding: 9px 18px; box-shadow: 0 4px 0 #9aa7b4, 0 10px 24px rgba(0,0,0,.4); }
+#key.on { opacity: 1; transform: translateX(-50%) translateY(0); }
+#key.down { transform: translateX(-50%) translateY(3px); box-shadow: 0 1px 0 #9aa7b4, 0 6px 14px rgba(0,0,0,.4); }
+#caption { position: absolute; left: 24px; top: 20px; font: 600 12px var(--font-readout); letter-spacing: 3px; color: var(--hud-line); z-index: 30; text-transform: uppercase; }
+/* Float shelf */
+#shelf { position: absolute; right: 18px; top: 120px; width: 170px; background: rgba(6,16,24,.92); border: 1px solid var(--hud-line-35); padding: 12px; display: none; z-index: 8; font: 11px var(--font-readout); color: var(--hud-text); }
+#shelf h3 { margin: 0 0 10px; font: 700 11px var(--font-label); letter-spacing: 3px; color: var(--hud-line); }
+#shelf div { padding: 6px 4px; border-top: 1px solid var(--hud-line-35); }
+/* Wayland dock and top bar */
+#topbar { position: absolute; left: 0; right: 0; top: 0; height: 26px; background: #0b0f14; color: #cfd6de; font: 600 12px system-ui; display: none; align-items: center; justify-content: center; z-index: 12; }
+#dock { position: absolute; right: 14px; top: 50%; width: 86px; height: 86px; transform: translateY(-50%); border-radius: 50%; display: none; place-items: center; text-align: center; z-index: 9;
+  background: var(--hud-core); border: 2px solid var(--hud-line); box-shadow: 0 0 14px rgba(79,227,255,.45); font: 700 11px var(--font-label); letter-spacing: 2px; color: var(--hud-line); }
+#dock small { display: block; font: 9px var(--font-readout); letter-spacing: 1px; color: var(--hud-muted); margin-top: 2px; }
+#tabs { position: absolute; display: none; gap: 6px; z-index: 11; transform: translateX(-50%); }
+#tabs span { font: 600 10px var(--font-readout); letter-spacing: 2px; padding: 5px 9px; border: 1px solid var(--hud-line-35); background: var(--hud-core); color: var(--hud-text); }
+#tabs span.on { border-color: var(--hud-accent); color: var(--hud-accent); }
+/* Open Graph card */
+#og { position: absolute; left: 70px; top: 50%; transform: translateY(-50%); display: none; z-index: 30; }
+#og h1 { margin: 0; font: 700 54px var(--font-label); letter-spacing: 8px; color: var(--hud-line); }
+#og p { margin: 14px 0 0; font: 500 24px var(--font-label); letter-spacing: 1px; color: var(--hud-text); max-width: 560px; line-height: 1.35; }
+#og p b { color: var(--hud-accent); font-weight: 700; }
+#og .mono { margin-top: 26px; font: 15px var(--font-readout); letter-spacing: 3px; color: var(--hud-muted); }
+</style>
+</head>
+<body>
+<div class="win" id="win"><div class="bar"><i></i><i></i><i></i><span id="title">Documents</span></div><div class="files" id="files"></div></div>
+<div id="shelf"><h3>FLOAT</h3></div>
+<div id="topbar">Mon 9:41</div>
+<div id="dock"><span>DROP<small>FILES HERE</small></span></div>
+<div id="tabs"><span data-k="convert">CONVERT</span><span data-k="tools">TOOLS</span><span data-k="actions">ACTIONS</span></div>
+<div id="ghost"><div class="stack"></div></div>
+<div id="ringhost"></div>
+<div id="key">SHIFT</div>
+<div id="caption"></div>
+<div id="og"><h1>METAMORPHOSIS</h1><p>Drag a file, tap a key, <b>drop it on the ring</b>. Convert and edit anything, offline.</p><div class="mono">WINDOWS · LINUX · FREE &amp; OPEN SOURCE</div></div>
+<svg id="cursor" viewBox="0 0 22 30" aria-hidden="true"><path d="M2 2 L2 24 L8 18.5 L12 28 L16 26.3 L12 17 L20 17 Z" fill="#fff" stroke="#000" stroke-width="1.6" stroke-linejoin="round"/></svg>
+<script src="../../ui/hud/panels.js"></script>
+<script src="../../ui/hud/ring.js"></script>
+<script>
+(async () => {
+  const q = new URLSearchParams(location.search);
+  const scene = q.get('scene') || 'convert';
+  const still = q.has('still');
+  const $ = (s) => document.querySelector(s);
+  const wait = (ms) => new Promise((r) => setTimeout(r, still ? 0 : ms));
+  const cursor = $('#cursor'), ghost = $('#ghost'), host = $('#ringhost'), key = $('#key');
+  let cx = 0, cy = 0;
+  const place = (el, x, y) => { el.style.left = x + 'px'; el.style.top = y + 'px'; };
+  const ease = (t) => (t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
+  async function move(x, y, ms = 600) {
+    const x0 = cx, y0 = cy, t0 = performance.now();
+    if (still) { cx = x; cy = y; place(cursor, x, y); place(ghost, x, y); return; }
+    await new Promise((done) => {
+      const step = (now) => {
+        const t = Math.min(1, (now - t0) / ms), e = ease(t);
+        cx = x0 + (x - x0) * e; cy = y0 + (y - y0) * e;
+        place(cursor, cx, cy); place(ghost, cx, cy);
+        if (t < 1) requestAnimationFrame(step); else done();
+      };
+      requestAnimationFrame(step);
+    });
+  }
+  function file(name, type, opts = {}) {
+    const f = hudEl('div', { class: 'file' + (opts.new ? ' new' : '') },
+      hudEl('div', { class: `icon t-${type}` + (opts.thumb ? ' thumb' : '') }, hudEl('b', { text: type.toUpperCase() })),
+      hudEl('div', { text: name }));
+    $('#files').append(f);
+    return f;
+  }
+  const centre = (el) => { const r = el.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; };
+  async function tap(label) {
+    key.textContent = label;
+    key.classList.add('on'); await wait(260);
+    key.classList.add('down'); await wait(160);
+    key.classList.remove('down'); await wait(420);
+    key.classList.remove('on');
+  }
+  let ring = null;
+  function openRing(items, ringName, fileInfo, x, y) {
+    host.textContent = '';
+    place(host, x, y);
+    host.style.display = 'block';
+    ring = createHudRing(host, { items: items.map((l, i) => (typeof l === 'string' ? { id: 'i' + i, label: l } : l)), ringName, file: fileInfo, boot: !still });
+    return ring;
+  }
+  const segCentre = (i) => centre(host.querySelectorAll('.hud-seg path')[i]);
+  async function hoverSeg(i, ms = 520) {
+    const [x, y] = segCentre(i);
+    await move(x, y, ms);
+    ring.setHot(i);
+  }
+  async function drag(fileEls, x, y) {
+    const [fx, fy] = centre(fileEls[0].querySelector('.icon'));
+    await move(fx, fy, 650);
+    fileEls.forEach((f) => f.classList.add('sel'));
+    await wait(200);
+    const stack = ghost.querySelector('.stack');
+    stack.textContent = '';
+    stack.append(fileEls[0].querySelector('.icon').cloneNode(true));
+    if (fileEls.length > 1) stack.append(hudEl('span', { class: 'count', text: String(fileEls.length) }));
+    ghost.style.opacity = 1;
+    await move(x, y, 750);
+  }
+  async function drop(savedName, addFile) {
+    ring.collapse();
+    ghost.style.opacity = 0;
+    ring.saved(savedName, { delay: 380, ms: 0 });
+    await wait(500);
+    const f = addFile && addFile();
+    await wait(1500);
+    host.style.display = 'none';
+    $('#files .sel') && document.querySelectorAll('.file.sel').forEach((e) => e.classList.remove('sel'));
+    return f;
+  }
+
+  const win = $('#win');
+  const CONVERT_PDF = ['JPG', 'PNG', 'TXT', 'Markdown', 'DOCX'];
+  const CONVERT_IMG = ['JPG', 'WebP', 'AVIF', 'TIFF', 'BMP', 'PDF', 'GIF'];
+  const TOOLS_IMG = ['Compress', 'Metadata', 'Edit', 'Annotate', 'Add BG', 'Crop', 'Redact', 'Collage', 'Remove BG'];
+  const ACTIONS = ['Share', 'Float', 'Copy', 'Move', 'Copy path', 'Terminal'];
+  await document.fonts.ready;
+  place(cursor, cx = 700, cy = 480);
+
+  if (scene === 'og') {
+    document.body.style.background = 'radial-gradient(90% 120% at 75% 50%, #12263a 0%, #08121b 60%, #050b11 100%)';
+    win.style.display = 'none'; cursor.style.display = 'none';
+    $('#og').style.display = 'block';
+    host.style.width = '500px';
+    openRing(CONVERT_IMG, 'CONVERT', { size: '1.1 MB', type: 'JPG' }, 900, 315);
+    ring.setHot(1);
+    window.__still = true;
+    return;
+  }
+
+  if (scene === 'wayland') {
+    $('#topbar').style.display = 'flex';
+    Object.assign(win.style, { left: '60px', top: '90px', width: '330px', height: '300px' });
+    const doc = file('Holiday.png', 'png', { thumb: true });
+    file('Notes.txt', 'txt'); file('Clip.mp4', 'mp4');
+    const dock = $('#dock'); dock.style.display = 'grid';
+    $('#caption').textContent = 'WAYLAND · DROP DOCK';
+    await wait(600);
+    const [dx, dy] = centre(dock);
+    await drag([doc], dx - 10, dy);
+    dock.style.display = 'none';
+    const rx = innerWidth - 250, ry = innerHeight / 2 + 14;
+    openRing(CONVERT_IMG, 'CONVERT', { size: '2.4 MB', type: 'PNG' }, rx, ry);
+    const tabs = $('#tabs'); tabs.style.display = 'flex'; place(tabs, rx, ry - 248);
+    const mark = (k) => tabs.querySelectorAll('span').forEach((s) => s.classList.toggle('on', s.dataset.k === k));
+    mark('convert');
+    await wait(700);
+    if (still) { mark('tools'); ring.setItems(TOOLS_IMG.map((l, i) => ({ id: 't' + i, label: l })), { ringName: 'TOOLS', file: { size: '2.4 MB', type: 'PNG' }, animate: 'none' }); ring.setHot(0); window.__still = true; return; }
+    await move(...centre(tabs.querySelector('[data-k="tools"]')), 600);
+    await wait(380);
+    mark('tools');
+    ring.setItems(TOOLS_IMG.map((l, i) => ({ id: 't' + i, label: l })), { ringName: 'TOOLS', file: { size: '2.4 MB', type: 'PNG' }, animate: 'switch' });
+    await wait(500);
+    await hoverSeg(0);
+    await wait(500);
+    tabs.style.display = 'none';
+    await drop('Holiday Compressed.png', () => file('Holiday Compressed.png', 'png', { new: true, thumb: true }));
+    dock.style.display = 'grid';
+    await wait(900);
+    window.__done = true;
+    return;
+  }
+
+  Object.assign(win.style, { left: '40px', top: '70px', width: '340px', height: '470px' });
+
+  if (scene === 'convert') {
+    $('#title').textContent = 'Reports';
+    const pdf = file('Report.pdf', 'pdf');
+    file('Summary.txt', 'txt'); file('Notes.txt', 'txt');
+    $('#caption').textContent = 'CONVERT · PDF → PNG';
+    await wait(500);
+    await drag([pdf], 640, 300);
+    await tap('SHIFT');
+    openRing(CONVERT_PDF, 'CONVERT', { size: '3.8 MB', type: 'PDF' }, 640, 300);
+    await wait(700);
+    await hoverSeg(1);
+    if (still) { window.__still = true; return; }
+    await wait(700);
+    await drop('Report (PNG) · 12 pages', () => file('Report (PNG)', 'png', { new: true }));
+  } else if (scene === 'tools') {
+    $('#title').textContent = 'Screenshots';
+    const shot = file('Screenshot.png', 'png', { thumb: true });
+    file('Logo.png', 'png'); file('Draft.txt', 'txt');
+    $('#caption').textContent = 'TOOLS · ADD BACKGROUND';
+    await wait(500);
+    await drag([shot], 640, 300);
+    await tap('CTRL');
+    openRing(TOOLS_IMG, 'TOOLS', { size: '1.6 MB', type: 'PNG' }, 640, 300);
+    await wait(700);
+    await hoverSeg(2, 400);
+    await hoverSeg(4);
+    if (still) { window.__still = true; return; }
+    await wait(700);
+    await drop('Screenshot With BG.png', () => file('Screenshot With BG.png', 'png', { new: true, thumb: true }));
+  } else if (scene === 'chain') {
+    $('#title').textContent = 'Slides';
+    const pdf = file('Deck.pdf', 'pdf');
+    $('#caption').textContent = 'CHAIN · PDF → JPG → CROP → BG';
+    await wait(400);
+    await drag([pdf], 640, 300);
+    await tap('SHIFT');
+    openRing(CONVERT_PDF, 'CONVERT', { size: '880 KB', type: 'PDF' }, 640, 300);
+    await wait(600); await hoverSeg(0);
+    if (still) { window.__still = true; return; }
+    await wait(450);
+    const jpg = await drop('Deck.jpg', () => file('Deck.jpg', 'jpg', { new: true, thumb: true }));
+    await drag([jpg], 640, 300);
+    await tap('CTRL');
+    openRing(TOOLS_IMG, 'TOOLS', { size: '410 KB', type: 'JPG' }, 640, 300);
+    await wait(600); await hoverSeg(5); await wait(450);
+    const crop = await drop('Deck Cropped.jpg', () => file('Deck Cropped.jpg', 'jpg', { new: true, thumb: true }));
+    await drag([crop], 640, 300);
+    await tap('CTRL');
+    openRing(TOOLS_IMG, 'TOOLS', { size: '380 KB', type: 'JPG' }, 640, 300);
+    await wait(600); await hoverSeg(4); await wait(450);
+    await drop('Deck Cropped With BG.png', () => file('Deck Cropped With BG.png', 'png', { new: true, thumb: true }));
+  } else if (scene === 'actions') {
+    $('#title').textContent = 'Downloads';
+    const a = file('Invoice.pdf', 'pdf'), b = file('Photo.jpg', 'jpg', { thumb: true }), c = file('Clip.mp4', 'mp4');
+    $('#caption').textContent = 'ACTIONS · FLOAT SHELF';
+    await wait(500);
+    await move(...centre(a.querySelector('.icon')), 600);
+    a.classList.add('sel'); await wait(180); b.classList.add('sel'); await wait(180); c.classList.add('sel'); await wait(250);
+    await drag([a, b, c], 640, 300);
+    await tap('ALT');
+    openRing(ACTIONS, 'ACTIONS', { size: '3 ITEMS', type: 'MIXED' }, 640, 300);
+    await wait(700);
+    await hoverSeg(1);
+    if (still) { window.__still = true; return; }
+    await wait(700);
+    ring.collapse(); ghost.style.opacity = 0;
+    ring.saved('3 files on the shelf', { delay: 380, ms: 0, verb: 'FLOATED' });
+    await wait(600);
+    const shelf = $('#shelf'); shelf.style.display = 'block';
+    for (const n of ['Invoice.pdf', 'Photo.jpg', 'Clip.mp4']) { shelf.append(hudEl('div', { text: n })); await wait(150); }
+    await wait(1200);
+    host.style.display = 'none';
+  }
+  await move(700, 480, 600);
+  await wait(800);
+  window.__done = true;
+})();
+</script>
+</body>
+</html>
