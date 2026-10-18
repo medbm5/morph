@@ -9,10 +9,11 @@ authors.workspace = true
 rust-version.workspace = true
 
 [features]
-default = ["image", "pdf", "ml"]
+default = ["image", "pdf", "ml", "media"]
 image = ["dep:image", "dep:webp", "dep:resvg", "dep:lopdf", "dep:oxipng", "dep:kamadak-exif", "dep:little_exif", "dep:rayon"]
 pdf = ["image", "dep:pdfium-render", "dep:docx-rs"]
 ml = ["image", "dep:ort"]
+media = []
 
 [dependencies]
 morph-core.workspace = true
