@@ -348,6 +348,29 @@ pub fn preview(
                 inputs.iter().map(|i| i.0.clone()).collect(),
             ))
         }
+        "image.redact" => {
+            // Areas only: detection runs once in the editor, which adds the results as areas.
+            let src = Source::load(&first.0, &first.1)?;
+            let kind = if params.str("style") == Some("blur") {
+                "blur"
+            } else {
+                "redact"
+            };
+            let color = params.str("color").unwrap_or("#000000").to_string();
+            let shapes: Vec<Value> = params
+                .get("areas")
+                .and_then(Value::as_array)
+                .map(|a| a.iter().map(|r| {
+                    let f = |k: &str| r.get(k).and_then(Value::as_f64).unwrap_or(0.0);
+                    json!({ "type": kind, "x": f("x"), "y": f("y"), "w": f("w"), "h": f("h"), "color": color,
+                            "strength": (f("w").min(f("h")) / 3.0).max(8.0) })
+                }).collect())
+                .unwrap_or_default();
+            Ok((
+                compose::annotate(&src, &Value::Array(shapes))?,
+                vec![first.0.clone()],
+            ))
+        }
         other => anyhow::bail!("no preview for {other}"),
     }
 }
