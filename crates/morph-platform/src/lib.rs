@@ -6,6 +6,7 @@
 //! can't do returns an error rather than panicking.
 
 pub mod actions;
+pub mod autostart;
 #[cfg(target_os = "linux")]
 mod linux;
 #[cfg(target_os = "linux")]
@@ -89,6 +90,23 @@ pub fn centred_square(x: i32, y: i32, size: i32) -> Rect {
 /// GNOME `enable-animations=false`, KDE `AnimationDurationFactor=0`.)
 pub fn reduced_motion() -> bool {
     imp::reduced_motion()
+}
+
+/// The user's UI locale (`fr-FR`, `en_US.UTF-8`…), if known.
+pub fn locale() -> Option<String> {
+    #[cfg(windows)]
+    {
+        use windows::Win32::Globalization::GetUserDefaultLocaleName;
+        let mut buf = [0u16; 85];
+        let n = unsafe { GetUserDefaultLocaleName(&mut buf) };
+        (n > 1).then(|| String::from_utf16_lossy(&buf[..n as usize - 1]))
+    }
+    #[cfg(not(windows))]
+    {
+        ["LC_ALL", "LC_MESSAGES", "LANG"]
+            .iter()
+            .find_map(|v| std::env::var(v).ok().filter(|s| !s.is_empty()))
+    }
 }
 
 /// Paths currently selected in the file-manager window at (x, y), if we can tell.
