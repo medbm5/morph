@@ -5,7 +5,12 @@ on:
     branches: [main]
     paths:
       - "docs/**"
+      - ".lighthouserc.json"
       - ".github/workflows/pages.yml"
+  pull_request:
+    paths:
+      - "docs/**"
+      - ".lighthouserc.json"
   workflow_dispatch:
 
 permissions:
@@ -18,7 +23,25 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  lighthouse:
+    name: Lighthouse (accessibility ≥ 95)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Audit the site
+        run: npx -y @lhci/cli@0.15.1 autorun --config=.lighthouserc.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighthouse
+          path: target/lighthouse
+
   deploy:
+    needs: lighthouse
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
