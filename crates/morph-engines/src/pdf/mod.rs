@@ -2,6 +2,7 @@
 
 pub mod layout;
 pub mod lib;
+pub mod tools;
 
 use crate::image::encode::{self, EncodeOptions};
 use anyhow::{bail, Context, Result};
@@ -56,6 +57,7 @@ pub fn register(reg: &mut Registry) {
         spec: docx,
         format: TextFormat::Docx,
     });
+    tools::register(reg);
 }
 
 /// Number of pages in a PDF.
@@ -65,6 +67,29 @@ pub fn page_count(path: &std::path::Path) -> Result<usize> {
         .load_pdf_from_file(path, None)
         .context("opening PDF")?;
     Ok(doc.pages().len() as usize)
+}
+
+/// Render every page as a small JPEG (`0001.jpg`…) into `dir`.
+pub fn render_thumbs(path: &std::path::Path, width: u32, dir: &std::path::Path) -> Result<()> {
+    let pdfium = lib::pdfium()?;
+    let doc = pdfium
+        .load_pdf_from_file(path, None)
+        .context("opening PDF")?;
+    let cfg = PdfRenderConfig::new().set_target_width(width as i32);
+    for (i, page) in doc.pages().iter().enumerate() {
+        let img = page.render_with_config(&cfg)?.as_image()?;
+        let rgb = image::DynamicImage::ImageRgb8(img.to_rgb8());
+        encode::encode(
+            &rgb,
+            "jpg",
+            &dir.join(format!("{:04}.jpg", i + 1)),
+            &EncodeOptions {
+                quality: 80,
+                ..Default::default()
+            },
+        )?;
+    }
+    Ok(())
 }
 
 /// Parse `all` or `1-3,5` into 0-based page indices.
@@ -194,7 +219,17 @@ impl Operation for Text {
                     if i > 0 {
                         s.push_str("\n\u{c}\n"); // form feed between pages
                     }
-                    s.push_str(page.text()?.all().trim_end());
+                    let text = page.text()?;
+                    let mut t = text.all();
+                    if t.trim().is_empty() {
+                        // Rotated pages: all() clips to the page box in rotated coordinates.
+                        t = text
+                            .chars()
+                            .iter()
+                            .filter_map(|c| c.unicode_char())
+                            .collect();
+                    }
+                    s.push_str(t.trim_end());
                     s.push('\n');
                     ctx.progress.set((i + 1) as f32 / n as f32);
                 }

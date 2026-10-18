@@ -51,4 +51,5 @@ image = { version = "0.25", default-features = false, features = ["png", "jpeg",
 resvg = "0.45"
 little_exif = "0.6"
 lopdf = "0.38"
+pdfium-render = "0.9"
 zip = { version = "2", default-features = false, features = ["deflate"] }
