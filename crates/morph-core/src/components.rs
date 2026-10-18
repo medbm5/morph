@@ -101,3 +101,40 @@ pub fn find_on_path(exe: &str) -> Option<PathBuf> {
             .find(|p| p.is_file())
     })
 }
+
+/// Programs we use from a system installation rather than a downloaded component.
+pub fn system_tool(component: &str) -> Option<PathBuf> {
+    match component {
+        "libreoffice" => {
+            if let Some(p) = std::env::var_os("MORPH_SOFFICE")
+                .map(PathBuf::from)
+                .filter(|p| p.is_file())
+            {
+                return Some(p);
+            }
+            let fixed: &[&str] = if cfg!(windows) {
+                &[
+                    r"C:\Program Files\LibreOffice\program\soffice.exe",
+                    r"C:\Program Files (x86)\LibreOffice\program\soffice.exe",
+                ]
+            } else {
+                &[
+                    "/usr/bin/soffice",
+                    "/usr/bin/libreoffice",
+                    "/usr/lib/libreoffice/program/soffice",
+                    "/opt/libreoffice/program/soffice",
+                    "/snap/bin/libreoffice",
+                ]
+            };
+            fixed
+                .iter()
+                .map(PathBuf::from)
+                .find(|p| p.is_file())
+                .or_else(|| find_on_path("soffice"))
+                .or_else(|| find_on_path("libreoffice"))
+        }
+        "pandoc" => find_tool("pandoc", "pandoc"),
+        "ffmpeg" => find_tool("ffmpeg", "ffmpeg"),
+        _ => None,
+    }
+}

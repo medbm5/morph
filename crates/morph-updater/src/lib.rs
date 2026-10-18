@@ -39,10 +39,16 @@ pub fn status() -> Vec<Status> {
             title: c.title.into(),
             description: c.description.into(),
             license: c.license.into(),
-            installed: morph_core::components::is_installed(c.name),
+            installed: morph_core::components::is_installed(c.name)
+                || morph_core::components::system_tool(c.name).is_some(),
             download_size: c.download_size(),
             requires: c.requires.iter().map(|s| s.to_string()).collect(),
-            system_hint: c.system_hint.map(str::to_string),
+            // On Windows a winget install replaces the hint.
+            system_hint: if cfg!(windows) && c.winget.is_some() {
+                None
+            } else {
+                c.system_hint.map(str::to_string)
+            },
         })
         .collect()
 }
@@ -56,6 +62,9 @@ pub fn install(name: &str, progress: ProgressFn) -> Result<()> {
         }
     }
     if c.assets().is_empty() {
+        if let (true, Some(id)) = (cfg!(windows), c.winget) {
+            return winget(id, c.name, progress);
+        }
         bail!(
             "{}",
             c.system_hint.unwrap_or("no download for this platform")
@@ -88,6 +97,28 @@ fn marker(c: &Component) -> serde_json::Value {
         "assets": c.assets().iter().map(|a| serde_json::json!({ "url": a.url, "sha256": a.sha256 })).collect::<Vec<_>>(),
         "installed_by": format!("Metamorphosis {}", morph_core::VERSION),
     })
+}
+
+/// Install a system package through winget (Windows), then check it's detectable.
+fn winget(id: &str, name: &str, progress: ProgressFn) -> Result<()> {
+    progress(0, 1, "winget");
+    let status = std::process::Command::new("winget")
+        .args([
+            "install",
+            "-e",
+            "--id",
+            id,
+            "--silent",
+            "--accept-package-agreements",
+            "--accept-source-agreements",
+        ])
+        .status()
+        .context("running winget")?;
+    if !status.success() && morph_core::components::system_tool(name).is_none() {
+        bail!("winget couldn't install {id}");
+    }
+    progress(1, 1, "done");
+    Ok(())
 }
 
 pub fn remove(name: &str) -> Result<()> {

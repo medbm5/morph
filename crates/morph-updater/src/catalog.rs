@@ -33,6 +33,8 @@ pub struct Component {
     pub linux: &'static [Asset],
     /// Shown when there is no download for this OS (use the system package instead).
     pub system_hint: Option<&'static str>,
+    /// Windows: install through winget with this package id instead of downloading.
+    pub winget: Option<&'static str>,
 }
 
 impl Component {
@@ -102,6 +104,7 @@ pub static CATALOG: &[Component] = &[
             TEXT_DET,
         ],
         system_hint: None,
+        winget: None,
     },
     Component {
         name: "ocr",
@@ -112,6 +115,7 @@ pub static CATALOG: &[Component] = &[
         windows: OCR_ASSETS,
         linux: OCR_ASSETS,
         system_hint: None,
+        winget: None,
     },
     Component {
         name: "bgremove",
@@ -122,6 +126,7 @@ pub static CATALOG: &[Component] = &[
         windows: BG_ASSETS,
         linux: BG_ASSETS,
         system_hint: None,
+        winget: None,
     },
 ];
 
@@ -195,6 +200,7 @@ pub static FFMPEG: Component = Component {
         ],
     }],
     system_hint: None,
+    winget: None,
 };
 
 pub fn find(name: &str) -> Option<&'static Component> {
@@ -204,8 +210,44 @@ pub fn find(name: &str) -> Option<&'static Component> {
         .find(|c| c.name == name)
 }
 
+pub static PANDOC: Component = Component {
+    name: "pandoc",
+    title: "pandoc (documents)",
+    description: "Converts between DOCX, Markdown, EPUB, HTML, RTF and plain text. Runs as a separate process.",
+    license: "GPL-2.0+ (separate program)",
+    requires: &[],
+    windows: &[Asset {
+        url: "https://github.com/jgm/pandoc/releases/download/3.12.1/pandoc-3.12.1-windows-x86_64.zip",
+        sha256: "6ef431cb20b2c24a0371fc19200dc49d452be54b1b5c9239f3462841ef53e587",
+        size: 42_154_914,
+        unpack: Unpack::Zip,
+        files: &[("pandoc-3.12.1/pandoc.exe", "pandoc.exe"), ("pandoc-3.12.1/COPYRIGHT.txt", "PANDOC-COPYRIGHT.txt")],
+    }],
+    linux: &[Asset {
+        url: "https://github.com/jgm/pandoc/releases/download/3.12.1/pandoc-3.12.1-linux-amd64.tar.gz",
+        sha256: "d0c90410e90204c9ca83b8539fac5c7aed01fd537207e4585849f8abc5df20b8",
+        size: 35_363_545,
+        unpack: Unpack::TarGz,
+        files: &[("pandoc-3.12.1/bin/pandoc", "bin/pandoc")],
+    }],
+    system_hint: None,
+    winget: None,
+};
+
+pub static LIBREOFFICE: Component = Component {
+    name: "libreoffice",
+    title: "LibreOffice (slides and office files)",
+    description: "Slides to PDF/images, Office documents and spreadsheets to PDF, Pages input. Uses your LibreOffice installation.",
+    license: "MPL-2.0 (separate program)",
+    requires: &[],
+    windows: &[],
+    linux: &[],
+    system_hint: Some("Install LibreOffice from your package manager (e.g. sudo apt install libreoffice) or libreoffice.org"),
+    winget: Some("TheDocumentFoundation.LibreOffice"),
+};
+
 /// Components defined as statics (large file lists).
-pub static EXTRA: &[&Component] = &[&FFMPEG];
+pub static EXTRA: &[&Component] = &[&FFMPEG, &PANDOC, &LIBREOFFICE];
 
 /// Every component.
 pub fn all() -> impl Iterator<Item = &'static Component> {
