@@ -25,7 +25,10 @@ pub fn run() {
         .expect("error while building Metamorphosis");
 
     app.run(|handle, event| {
-        if let RunEvent::ExitRequested { code: None, api, .. } = event {
+        if let RunEvent::ExitRequested {
+            code: None, api, ..
+        } = event
+        {
             // Last window closed: keep running in the background.
             api.prevent_exit();
             let _ = handle.get_webview_window("about").map(|w| w.hide());
