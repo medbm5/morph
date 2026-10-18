@@ -1,21 +1,26 @@
 (() => {
   'use strict';
 
-  /* ---------- Theme toggle ---------- */
-  const root = document.documentElement;
-  const toggle = document.querySelector('.theme-toggle');
-  const systemDark = () => window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const currentTheme = () => root.dataset.theme || (systemDark() ? 'dark' : 'light');
-  if (toggle) {
-    const label = () => toggle.setAttribute('aria-label', `Switch to ${currentTheme() === 'dark' ? 'light' : 'dark'} theme`);
-    label();
-    toggle.addEventListener('click', () => {
-      const next = currentTheme() === 'dark' ? 'light' : 'dark';
-      root.dataset.theme = next;
-      try { localStorage.setItem('morph-theme', next); } catch (e) {}
-      label();
-    });
+  /* ---------- Reveal on scroll ---------- */
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const targets = document.querySelectorAll('.reveal, .display');
+  if (reduced || !('IntersectionObserver' in window)) {
+    targets.forEach((el) => el.classList.add('in'));
+  } else {
+    const io = new IntersectionObserver((entries) => entries.forEach((e) => {
+      if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+    }), { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
+    targets.forEach((el) => io.observe(el));
   }
+
+  /* ---------- Card glow follows the pointer ---------- */
+  document.querySelectorAll('.card').forEach((card) => {
+    card.addEventListener('pointermove', (e) => {
+      const r = card.getBoundingClientRect();
+      card.style.setProperty('--mx', `${e.clientX - r.left}px`);
+      card.style.setProperty('--my', `${e.clientY - r.top}px`);
+    });
+  });
 
   /* ---------- HUD ring demo ---------- */
   const FILE = { name: 'Page 001.jpg', stem: 'Page 001', size: '1.1 MB', type: 'JPG' };
@@ -35,8 +40,7 @@
   const statusLine = document.getElementById('hud-status');
   const keys = [...document.querySelectorAll('.key')];
   const swatches = [...document.querySelectorAll('.swatch')];
-  if (!host || !window.createHudRing) return;
-
+  if (host && window.createHudRing) {
   let ringName = 'convert';
   const hud = window.createHudRing(host, {
     items: RINGS.convert,
@@ -57,8 +61,6 @@
 
   swatches.forEach((sw) => sw.addEventListener('click', () => {
     hud.setAccent(sw.dataset.accent);
-    const panel = document.querySelector('.hud-panel');
-    if (panel) panel.style.setProperty('--hud-accent', sw.dataset.accent);
     swatches.forEach((x) => x.setAttribute('aria-pressed', String(x === sw)));
   }));
 
@@ -70,6 +72,8 @@
     if (tapped && e.key === tapped) { if (e.key === 'Alt') e.preventDefault(); setRing(KEYMAP[e.key]); }
     tapped = null;
   });
+
+  }
 
   /* ---------- Install tabs ---------- */
   document.querySelectorAll('[data-tabs]').forEach((tabs) => {
