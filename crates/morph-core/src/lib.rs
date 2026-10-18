@@ -3,13 +3,23 @@
 //!
 //! Engines implement [`Operation`]; the app and the `morph` CLI share one
 //! [`Registry`], so anything the ring can do, the CLI can do.
+
 pub mod components;
+pub mod job;
 pub mod kind;
 pub mod naming;
 pub mod op;
 pub mod output;
 pub mod progress;
 pub mod registry;
+
+pub use job::{Job, JobEvent, JobReport, Runner};
+pub use kind::{detect, Family, Kind};
+pub use naming::Naming;
+pub use op::{Arity, OpContext, OpSpec, Operation, OutputKind, ParamKind, ParamSpec, Params, Ring};
+pub use output::OutputSink;
+pub use progress::Progress;
+pub use registry::Registry;
 
 /// Version shared by the CLI and the app.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
