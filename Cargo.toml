@@ -12,6 +12,7 @@ rust-version = "1.80"
 
 [workspace.dependencies]
 morph-core = { path = "crates/morph-core" }
+morph-engines = { path = "crates/morph-engines" }
 anyhow = "1"
 thiserror = "2"
 serde = { version = "1", features = ["derive"] }
