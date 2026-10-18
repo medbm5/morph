@@ -9,9 +9,10 @@ authors.workspace = true
 rust-version.workspace = true
 
 [features]
-default = ["image", "pdf"]
+default = ["image", "pdf", "ml"]
 image = ["dep:image", "dep:webp", "dep:resvg", "dep:lopdf", "dep:oxipng", "dep:kamadak-exif", "dep:little_exif", "dep:rayon"]
 pdf = ["image", "dep:pdfium-render", "dep:docx-rs"]
+ml = ["image", "dep:ort"]
 
 [dependencies]
 morph-core.workspace = true
@@ -28,6 +29,7 @@ oxipng = { version = "10", optional = true, default-features = false, features =
 kamadak-exif = { version = "0.6", optional = true }
 little_exif = { version = "0.6", optional = true }
 rayon = { version = "1", optional = true }
+ort = { version = "=2.0.0-rc.14", optional = true, default-features = false, features = ["std", "ndarray", "load-dynamic", "api-22"] }
 docx-rs = { version = "0.4", optional = true }
 flate2 = "1"
 
@@ -45,6 +47,7 @@ tempfile.workspace = true
 sha2.workspace = true
 hex.workspace = true
 image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp"] }
+resvg = "0.45"
 little_exif = "0.6"
 lopdf = "0.38"
 zip = { version = "2", default-features = false, features = ["deflate"] }
