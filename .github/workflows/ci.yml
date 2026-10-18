@@ -82,3 +82,22 @@ jobs:
       - name: Photo editor preview matches export (ΔE < 2)
         working-directory: app
         run: node tests/adjust-parity.mjs
+
+  ml:
+    name: Local AI (network disabled)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Install components (checksums verified)
+        run: |
+          cargo run -q -p morph-cli -- component install ml
+          cargo run -q -p morph-cli -- component install ocr
+          cargo run -q -p morph-cli -- component install bgremove
+      - name: Build tests
+        run: cargo test -p morph-engines --test ml_detection --no-run
+      - name: Detection suite with no network
+        run: |
+          sudo unshare --net -- sudo -u "$USER" env "PATH=$PATH" "HOME=$HOME" \
+            cargo test -p morph-engines --test ml_detection --offline -- --nocapture
