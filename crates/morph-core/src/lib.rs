@@ -5,6 +5,7 @@
 //! [`Registry`], so anything the ring can do, the CLI can do.
 pub mod components;
 pub mod kind;
+pub mod naming;
 pub mod op;
 pub mod output;
 pub mod progress;
