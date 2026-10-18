@@ -8,6 +8,8 @@ pub mod image;
 pub mod media;
 #[cfg(feature = "ml")]
 pub mod ml;
+#[cfg(feature = "office")]
+pub mod office;
 #[cfg(feature = "pdf")]
 pub mod pdf;
 
@@ -23,6 +25,8 @@ pub fn register_all(reg: &mut Registry) {
     ml::ops::register(reg);
     #[cfg(feature = "media")]
     media::register(reg);
+    #[cfg(feature = "office")]
+    office::register(reg);
 }
 
 /// A registry with every built-in operation.
