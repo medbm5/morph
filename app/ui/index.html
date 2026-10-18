@@ -2,9 +2,79 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Metamorphosis</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>About Metamorphosis</title>
+<style>
+:root {
+  --hud-line: #4FE3FF;
+  --hud-accent: #FFB347;
+  --hud-text: #BDF4FF;
+  --hud-muted: #6FB6C6;
+  --hud-core: rgba(4, 10, 18, 0.90);
+  --font-label: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+  --font-readout: "JetBrains Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+}
+html, body { margin: 0; height: 100%; }
+body {
+  background-color: #04070C;
+  background-image: linear-gradient(rgba(79,227,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(79,227,255,.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+  color: var(--hud-text); font-family: var(--font-label);
+  user-select: none;
+}
+.frame { position: relative; box-sizing: border-box; min-height: 100%; padding: 40px 48px; display: flex; flex-direction: column; gap: 22px; }
+.corner { position: absolute; width: 28px; height: 28px; border: 0 solid var(--hud-line); }
+.tl { left: 16px; top: 16px; border-left-width: 2px; border-top-width: 2px; } .tr { right: 16px; top: 16px; border-right-width: 2px; border-top-width: 2px; }
+.bl { left: 16px; bottom: 16px; border-left-width: 2px; border-bottom-width: 2px; } .br { right: 16px; bottom: 16px; border-right-width: 2px; border-bottom-width: 2px; }
+header { display: flex; align-items: center; gap: 12px; }
+.blink { width: 8px; height: 8px; border-radius: 50%; background: var(--hud-accent); animation: b 1.6s ease-in-out infinite; }
+@keyframes b { 50% { opacity: .35; } }
+.brand { font-weight: 700; letter-spacing: 4px; font-size: 14px; color: var(--hud-line); }
+.mono { font-family: var(--font-readout); font-size: 11px; color: var(--hud-muted); }
+h1 { margin: 0; font-size: 26px; letter-spacing: 6px; font-weight: 700; color: var(--hud-accent); }
+p { margin: 0; line-height: 1.5; font-size: 14px; }
+.card { border: 1px solid rgba(79,227,255,.55); background: var(--hud-core); font-family: var(--font-readout); font-size: 13px; }
+.card-head { display: flex; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid rgba(79,227,255,.35); }
+.card-head b { font-family: var(--font-label); letter-spacing: 3px; color: var(--hud-line); }
+table { border-collapse: collapse; width: 100%; }
+th, td { text-align: left; padding: 6px 14px; font-weight: 400; }
+th { color: var(--hud-muted); width: 46%; }
+td.rank { color: var(--hud-accent); font-weight: 700; width: 40px; }
+td.note { color: var(--hud-muted); font-size: 11px; }
+footer { margin-top: auto; display: flex; justify-content: space-between; }
+@media (prefers-reduced-motion: reduce) { .blink { animation: none; } }
+</style>
 </head>
 <body>
-<h1>Metamorphosis</h1>
+<div class="frame">
+  <span class="corner tl" aria-hidden="true"></span><span class="corner tr" aria-hidden="true"></span>
+  <span class="corner bl" aria-hidden="true"></span><span class="corner br" aria-hidden="true"></span>
+  <header><span class="blink" aria-hidden="true"></span><span class="brand">METAMORPHOSIS</span><span class="mono" id="ver">// STAND ACTIVE</span></header>
+  <h1>「METAMORPHOSIS」</h1>
+  <p>Drag a file, tap a key, drop it on the ring. The original is never modified — every result is saved as a new file next to the source.</p>
+  <section class="card" aria-label="Stand stats">
+    <div class="card-head"><b>STAND STATS</b><span>User: you</span></div>
+    <table>
+      <tbody>
+        <tr><th scope="row">Power</th><td class="rank">B</td><td class="note"></td></tr>
+        <tr><th scope="row">Speed</th><td class="rank">A</td><td class="note"></td></tr>
+        <tr><th scope="row">Range</th><td class="rank">C</td><td class="note">only what the user drags</td></tr>
+        <tr><th scope="row">Durability</th><td class="rank">A</td><td class="note">originals are never destroyed</td></tr>
+        <tr><th scope="row">Precision</th><td class="rank">A</td><td class="note"></td></tr>
+        <tr><th scope="row">Development potential</th><td class="rank">A</td><td class="note"></td></tr>
+      </tbody>
+    </table>
+  </section>
+  <p class="mono">Independent open-source project inspired by Tangerine for Mac; not affiliated with Tangerine or Leap Studio. Named after Philip Glass's album <cite>Metamorphosis</cite>.</p>
+  <footer class="mono"><span>MIT OR Apache-2.0</span><span>Offline · no network code</span></footer>
+</div>
+<script>
+(async () => {
+  const t = window.__TAURI__;
+  if (!t) return;
+  const v = await t.app.getVersion();
+  document.getElementById('ver').textContent = `// STAND ACTIVE · v${v}`;
+})();
+</script>
 </body>
 </html>
