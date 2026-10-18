@@ -33,8 +33,7 @@ pub struct Status {
 }
 
 pub fn status() -> Vec<Status> {
-    CATALOG
-        .iter()
+    catalog::all()
         .map(|c| Status {
             name: c.name.into(),
             title: c.title.into(),
@@ -247,7 +246,7 @@ mod tests {
 
     #[test]
     fn catalog_is_complete() {
-        for c in CATALOG {
+        for c in catalog::all() {
             for a in c.windows.iter().chain(c.linux) {
                 assert_eq!(a.sha256.len(), 64, "{}", a.url);
                 assert!(a.url.starts_with("https://"));

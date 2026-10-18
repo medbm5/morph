@@ -2,7 +2,10 @@
   "bundle": {
     "resources": {
       "../../vendor/pdfium/linux/libpdfium.so": "pdfium/libpdfium.so",
-      "../../vendor/pdfium/linux/PDFIUM-LICENSE.txt": "pdfium/LICENSE.txt"
+      "../../vendor/pdfium/linux/PDFIUM-LICENSE.txt": "pdfium/LICENSE.txt",
+      "../../vendor/ffmpeg/linux/bin/*": "sidecars/bin/",
+      "../../vendor/ffmpeg/linux/lib/*": "sidecars/lib/",
+      "../../vendor/ffmpeg/linux/LICENSE.txt": "sidecars/FFMPEG-LICENSE.txt"
     }
   }
 }

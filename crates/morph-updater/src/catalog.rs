@@ -150,6 +150,64 @@ const BG_ASSETS: &[Asset] = &[Asset {
     files: &[("", "bg-u2netp.onnx")],
 }];
 
+/// LGPL FFmpeg (BtbN builds; no GPL encoders such as x264/x265). Autobuilds are pruned
+/// upstream after a while: bump the tag and checksums when they disappear.
+pub static FFMPEG: Component = Component {
+    name: "ffmpeg",
+    title: "FFmpeg (audio and video)",
+    description: "Converts, compresses and edits audio and video. LGPL build, runs as a separate process.",
+    license: "LGPL-2.1+ (FFmpeg) · OpenH264 BSD",
+    requires: &[],
+    windows: &[Asset {
+        url: "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-10-18-13-01/ffmpeg-n8.1.3-18-g46d899d7a0-win64-lgpl-shared-8.1.zip",
+        sha256: "eb9346bdb3312d51ce5bfcf78041fd17e3db91f9fff9446d0d758406b85d2a51",
+        size: 80_993_114,
+        unpack: Unpack::Zip,
+        files: &[
+            (concat!("ffmpeg-n8.1.3-18-g46d899d7a0-win64-lgpl-shared-8.1", "/bin/ffmpeg.exe"), "ffmpeg.exe"),
+            (concat!("ffmpeg-n8.1.3-18-g46d899d7a0-win64-lgpl-shared-8.1", "/bin/ffprobe.exe"), "ffprobe.exe"),
+            (concat!("ffmpeg-n8.1.3-18-g46d899d7a0-win64-lgpl-shared-8.1", "/bin/avcodec-62.dll"), "avcodec-62.dll"),
+            (concat!("ffmpeg-n8.1.3-18-g46d899d7a0-win64-lgpl-shared-8.1", "/bin/avformat-62.dll"), "avformat-62.dll"),
+            (concat!("ffmpeg-n8.1.3-18-g46d899d7a0-win64-lgpl-shared-8.1", "/bin/avutil-60.dll"), "avutil-60.dll"),
+            (concat!("ffmpeg-n8.1.3-18-g46d899d7a0-win64-lgpl-shared-8.1", "/bin/avfilter-11.dll"), "avfilter-11.dll"),
+            (concat!("ffmpeg-n8.1.3-18-g46d899d7a0-win64-lgpl-shared-8.1", "/bin/avdevice-62.dll"), "avdevice-62.dll"),
+            (concat!("ffmpeg-n8.1.3-18-g46d899d7a0-win64-lgpl-shared-8.1", "/bin/swresample-6.dll"), "swresample-6.dll"),
+            (concat!("ffmpeg-n8.1.3-18-g46d899d7a0-win64-lgpl-shared-8.1", "/bin/swscale-9.dll"), "swscale-9.dll"),
+            (concat!("ffmpeg-n8.1.3-18-g46d899d7a0-win64-lgpl-shared-8.1", "/LICENSE.txt"), "FFMPEG-LICENSE.txt"),
+        ],
+    }],
+    linux: &[Asset {
+        url: "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-10-18-13-01/ffmpeg-n8.1.3-18-g46d899d7a0-linux64-lgpl-shared-8.1.tar.xz",
+        sha256: "2fb1306739c117c7c0e3dbe8bb2fd968ee3976323c6537c6151337b05ef3ea07",
+        size: 65_870_104,
+        unpack: Unpack::TarXz,
+        files: &[
+            (concat!("ffmpeg-n8.1.3-18-g46d899d7a0-linux64-lgpl-shared-8.1", "/bin/ffmpeg"), "bin/ffmpeg"),
+            (concat!("ffmpeg-n8.1.3-18-g46d899d7a0-linux64-lgpl-shared-8.1", "/bin/ffprobe"), "bin/ffprobe"),
+            (concat!("ffmpeg-n8.1.3-18-g46d899d7a0-linux64-lgpl-shared-8.1", "/lib/libavcodec.so.62.28.103"), "lib/libavcodec.so.62"),
+            (concat!("ffmpeg-n8.1.3-18-g46d899d7a0-linux64-lgpl-shared-8.1", "/lib/libavformat.so.62.12.103"), "lib/libavformat.so.62"),
+            (concat!("ffmpeg-n8.1.3-18-g46d899d7a0-linux64-lgpl-shared-8.1", "/lib/libavutil.so.60.26.103"), "lib/libavutil.so.60"),
+            (concat!("ffmpeg-n8.1.3-18-g46d899d7a0-linux64-lgpl-shared-8.1", "/lib/libavfilter.so.11.14.103"), "lib/libavfilter.so.11"),
+            (concat!("ffmpeg-n8.1.3-18-g46d899d7a0-linux64-lgpl-shared-8.1", "/lib/libavdevice.so.62.3.103"), "lib/libavdevice.so.62"),
+            (concat!("ffmpeg-n8.1.3-18-g46d899d7a0-linux64-lgpl-shared-8.1", "/lib/libswresample.so.6.3.103"), "lib/libswresample.so.6"),
+            (concat!("ffmpeg-n8.1.3-18-g46d899d7a0-linux64-lgpl-shared-8.1", "/lib/libswscale.so.9.5.103"), "lib/libswscale.so.9"),
+            (concat!("ffmpeg-n8.1.3-18-g46d899d7a0-linux64-lgpl-shared-8.1", "/LICENSE.txt"), "FFMPEG-LICENSE.txt"),
+        ],
+    }],
+    system_hint: None,
+};
+
 pub fn find(name: &str) -> Option<&'static Component> {
-    CATALOG.iter().find(|c| c.name == name)
+    CATALOG
+        .iter()
+        .chain(EXTRA.iter().copied())
+        .find(|c| c.name == name)
+}
+
+/// Components defined as statics (large file lists).
+pub static EXTRA: &[&Component] = &[&FFMPEG];
+
+/// Every component.
+pub fn all() -> impl Iterator<Item = &'static Component> {
+    CATALOG.iter().chain(EXTRA.iter().copied())
 }

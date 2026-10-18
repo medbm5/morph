@@ -77,7 +77,13 @@ pub fn find_tool(component: &str, exe: &str) -> Option<PathBuf> {
         .ok()
         .and_then(|e| e.parent().map(Path::to_path_buf))
     {
-        for cand in [dir.join(&file), dir.join("sidecars").join(&file)] {
+        for cand in [
+            dir.join(&file),
+            dir.join("sidecars").join(&file),
+            dir.join("sidecars").join("bin").join(&file),
+            // Linux packages: /usr/bin/metamorphosis → /usr/lib/Metamorphosis/sidecars/
+            dir.join("../lib/Metamorphosis/sidecars/bin").join(&file),
+        ] {
             if cand.is_file() {
                 return Some(cand);
             }

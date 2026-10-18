@@ -2,7 +2,8 @@
   "bundle": {
     "resources": {
       "../../vendor/pdfium/windows/pdfium.dll": "pdfium/pdfium.dll",
-      "../../vendor/pdfium/windows/PDFIUM-LICENSE.txt": "pdfium/LICENSE.txt"
+      "../../vendor/pdfium/windows/PDFIUM-LICENSE.txt": "pdfium/LICENSE.txt",
+      "../../vendor/ffmpeg/windows/*": "sidecars/"
     }
   }
 }
