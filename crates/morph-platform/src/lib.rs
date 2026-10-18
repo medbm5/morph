@@ -11,6 +11,8 @@ mod linux;
 #[cfg(target_os = "linux")]
 mod linux_clip;
 pub mod shell_menu;
+#[cfg(target_os = "linux")]
+pub mod wayland;
 #[cfg(windows)]
 mod win;
 #[cfg(windows)]
@@ -179,4 +181,12 @@ pub fn has_compositor() -> bool {
     {
         true
     }
+}
+
+/// True in a Wayland session (where global input hooks and free window placement
+/// aren't available).
+pub fn is_wayland() -> bool {
+    cfg!(target_os = "linux")
+        && (std::env::var_os("WAYLAND_DISPLAY").is_some()
+            || std::env::var("XDG_SESSION_TYPE").is_ok_and(|v| v == "wayland"))
 }

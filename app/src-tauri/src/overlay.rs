@@ -113,6 +113,9 @@ pub fn start_watcher(app: &AppHandle) {
         }
         Err(e) => {
             log::warn!("{e}");
+            if morph_platform::is_wayland() {
+                wayland_mode(app);
+            }
             return;
         }
     }
@@ -125,6 +128,31 @@ pub fn start_watcher(app: &AppHandle) {
             }
         })
         .expect("spawning ring thread");
+}
+
+/// No global input on Wayland: show the drop dock, bind the portal shortcut, and
+/// explain the difference once.
+fn wayland_mode(app: &AppHandle) {
+    log::info!("Wayland session: using the drop dock");
+    if let Err(e) = crate::dock::show(app) {
+        log::warn!("dock: {e:#}");
+    }
+    #[cfg(target_os = "linux")]
+    crate::dock::summon_shortcut(app);
+    let marker = morph_core::components::config_dir().join("wayland.seen");
+    if !marker.exists() {
+        let _ = std::fs::create_dir_all(marker.parent().unwrap());
+        let _ = std::fs::write(&marker, morph_core::VERSION);
+        let req = crate::expanded::Request {
+            mode: "wayland".into(),
+            ring: None,
+            paths: Vec::new(),
+            op: None,
+        };
+        if let Err(e) = crate::expanded::show(app, req) {
+            log::warn!("wayland page: {e:#}");
+        }
+    }
 }
 
 fn handle(app: &AppHandle, action: Action) {
