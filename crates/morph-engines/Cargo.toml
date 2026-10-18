@@ -49,7 +49,15 @@ windows = { version = "0.62", features = [
   "Win32_System_Com",
   "Win32_System_Com_StructuredStorage",
   "Win32_System_Variant",
+  "Win32_Security",
+  "Win32_Security_Authorization",
+  "Win32_Storage_FileSystem",
+  "Win32_System_Pipes",
+  "Win32_System_Threading",
 ] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+landlock = "0.4"
 
 [dev-dependencies]
 tempfile.workspace = true

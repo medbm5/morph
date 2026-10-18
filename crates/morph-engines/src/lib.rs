@@ -4,6 +4,7 @@
 
 #[cfg(feature = "archive")]
 pub mod archive;
+pub mod command;
 #[cfg(feature = "image")]
 pub mod image;
 #[cfg(feature = "media")]
@@ -79,9 +80,5 @@ pub fn recipe_op(
     base: std::sync::Arc<Registry>,
     path: &std::path::Path,
 ) -> anyhow::Result<std::sync::Arc<dyn morph_core::Operation>> {
-    Ok(std::sync::Arc::new(morph_core::recipe::RecipeOp::new(
-        f,
-        base,
-        Some(path.to_path_buf()),
-    )?))
+    command::recipe_op(f, base, path)
 }

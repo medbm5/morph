@@ -43,6 +43,10 @@ pub struct RecipeFile {
     /// Output template for command recipes: `{stem} Thumb.webp`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub output: Option<String>,
+    /// Parameters of a command recipe (`[[param]]`), shown in the editor and
+    /// substituted into `run` as `{key}`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub param: Vec<crate::op::ParamSpec>,
 }
 
 fn default_ring() -> String {
