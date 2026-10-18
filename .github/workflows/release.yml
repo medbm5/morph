@@ -36,6 +36,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev \
             libxdo-dev libssl-dev libx11-dev libxi-dev libxext-dev libxcb1-dev
+      - name: Fetch PDFium
+        run: python3 scripts/fetch_pdfium.py
       - name: Install Tauri CLI
         working-directory: app
         run: npm ci
@@ -58,5 +60,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          cp target/release/${{ matrix.cli }} ${{ matrix.cli_asset }}
-          gh release upload "${{ github.ref_name }}" ${{ matrix.cli_asset }} --clobber
+          mkdir -p cli && cp target/release/${{ matrix.cli }} cli/
+          cp vendor/pdfium/*/*pdfium* cli/
+          cd cli && 7z a ../${{ matrix.cli_asset }}.zip . >/dev/null 2>&1 || zip -r ../${{ matrix.cli_asset }}.zip .
+          cd .. && gh release upload "${{ github.ref_name }}" ${{ matrix.cli_asset }}.zip --clobber

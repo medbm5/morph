@@ -9,8 +9,9 @@ authors.workspace = true
 rust-version.workspace = true
 
 [features]
-default = ["image"]
+default = ["image", "pdf"]
 image = ["dep:image", "dep:webp", "dep:resvg", "dep:lopdf"]
+pdf = ["image", "dep:pdfium-render", "dep:docx-rs"]
 
 [dependencies]
 morph-core.workspace = true
@@ -22,6 +23,8 @@ image = { version = "0.25", optional = true, default-features = false, features 
 webp = { version = "0.3", optional = true, default-features = false }
 resvg = { version = "0.45", optional = true }
 lopdf = { version = "0.38", optional = true }
+pdfium-render = { version = "0.9", optional = true }
+docx-rs = { version = "0.4", optional = true }
 flate2 = "1"
 
 [target.'cfg(windows)'.dependencies]
@@ -39,3 +42,4 @@ sha2.workspace = true
 hex.workspace = true
 image = { version = "0.25", default-features = false, features = ["png"] }
 lopdf = "0.38"
+zip = { version = "2", default-features = false, features = ["deflate"] }

@@ -4,6 +4,8 @@
 
 #[cfg(feature = "image")]
 pub mod image;
+#[cfg(feature = "pdf")]
+pub mod pdf;
 
 use morph_core::Registry;
 
@@ -11,6 +13,8 @@ use morph_core::Registry;
 pub fn register_all(reg: &mut Registry) {
     #[cfg(feature = "image")]
     image::register(reg);
+    #[cfg(feature = "pdf")]
+    pdf::register(reg);
 }
 
 /// A registry with every built-in operation.
