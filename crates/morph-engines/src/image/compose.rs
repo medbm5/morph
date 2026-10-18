@@ -275,6 +275,30 @@ pub struct Background {
     pub size: String,
     /// Background picture for `image`.
     pub image: Option<PathBuf>,
+    /// Named style that sets kind and colours: `soft`, `vivid`, `hud`, `dark`, `light`, `black`.
+    pub preset: String,
+}
+
+impl Background {
+    /// Apply `preset` (if any) over the explicit kind/colours.
+    pub fn resolved(&self) -> Background {
+        let mut b = self.clone();
+        let set = |b: &mut Background, kind: &str, a: &str, c: &str| {
+            b.kind = kind.into();
+            b.color = a.into();
+            b.color2 = c.into();
+        };
+        match self.preset.as_str() {
+            "soft" => set(&mut b, "gradient", "#F4F1E8", "#CFD8DC"),
+            "vivid" => set(&mut b, "gradient", "#FF5EA8", "#5856D6"),
+            "hud" => set(&mut b, "gradient", "#4FE3FF", "#FFB347"),
+            "dark" => set(&mut b, "gradient", "#0F2027", "#2C5364"),
+            "light" => set(&mut b, "solid", "#FFFFFF", "#FFFFFF"),
+            "black" => set(&mut b, "solid", "#000000", "#000000"),
+            _ => {}
+        }
+        b
+    }
 }
 
 impl Default for Background {
@@ -289,6 +313,7 @@ impl Default for Background {
             shadow: 0.5,
             size: "auto".into(),
             image: None,
+            preset: String::new(),
         }
     }
 }
@@ -316,6 +341,7 @@ enum SizeSpec {
 
 /// The photo on a background canvas. `extra` is the optional background image.
 pub fn background(src: &Source, bg: &Background, extra: Option<&Source>) -> Result<Scene> {
+    let bg = &bg.resolved();
     let (iw, ih) = src.size();
     let (iw, ih) = (iw as f64, ih as f64);
     let pad = iw.max(ih) * bg.padding.clamp(0.0, 100.0) / 100.0;

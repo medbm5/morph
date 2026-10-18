@@ -1,0 +1,5 @@
+# Built-in recipe: any PDF or image → a 1080×1080 post on a soft background.
+name = "Square post"
+ring = "tools"
+description = "Convert to JPG, crop 1:1, place on a soft background"
+steps = ["convert:jpg", "crop:1:1", "bg:preset=soft,size=1080x1080,padding=6"]

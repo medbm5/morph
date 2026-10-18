@@ -1,0 +1,6 @@
+# Built-in recipe: a light, metadata-free WebP for the web.
+name = "Web ready"
+ring = "tools"
+description = "Strip metadata, then compress to WebP under 500 KB, max 1920 px wide"
+accepts = ["image/jpeg", "image/png", "image/webp", "image/tiff"]
+steps = ["strip", "compress:target=500KB,format=webp,max_width=1920"]
