@@ -130,6 +130,7 @@ impl Operation for CommandOp {
         let name = sanitize(&fill(&self.output, &vars));
 
         let dir = ctx.sink.dir_for(input);
+        std::fs::create_dir_all(&dir)?;
         let stage = tempdir_in(&dir)?;
         let staged = stage.path().join(&name);
         vars.push(("input".into(), input.display().to_string()));

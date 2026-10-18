@@ -12,6 +12,7 @@ mod overlay;
 mod settings;
 mod state;
 mod tray;
+mod watch;
 
 use state::AppState;
 use tauri::{Manager, RunEvent, WindowEvent};
@@ -73,6 +74,8 @@ pub fn run() {
             settings::portable_status,
             settings::set_portable,
             settings::open_settings,
+            settings::pick_folder,
+            settings::watch_ops,
         ])
         .setup(|app| {
             // The registry needs the app handle (actions use its windows).
@@ -81,6 +84,7 @@ pub fn run() {
             overlay::create(app.handle())?;
             overlay::start_watcher(app.handle());
             integration::install_once(app.handle());
+            watch::recipes(app.handle());
             settings::apply(app.handle(), &app.state::<AppState>().settings(), false);
             let args: Vec<String> = std::env::args().collect();
             handle_args(app.handle(), &args, true);

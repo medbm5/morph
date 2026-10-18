@@ -30,6 +30,7 @@ drag = "2"
 tauri-plugin-single-instance = "2"
 tauri-plugin-global-shortcut = "2"
 rfd = "0.17"
+notify = "8"
 arboard = "3"
 image = { version = "0.25", default-features = false, features = ["png"] }
 dirs.workspace = true
