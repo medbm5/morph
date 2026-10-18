@@ -92,6 +92,9 @@ jobs:
       - name: Photo editor preview matches export (ΔE < 2)
         working-directory: app
         run: node tests/adjust-parity.mjs
+      - name: Settings page saves, warns on low contrast, translates
+        working-directory: app
+        run: node tests/settings-page.mjs
 
   ml:
     name: Local AI (network disabled)
