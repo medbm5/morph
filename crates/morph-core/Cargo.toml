@@ -1,0 +1,24 @@
+[package]
+name = "morph-core"
+description = "Operation registry, naming, atomic output and job runner for Metamorphosis"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+thiserror.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+infer.workspace = true
+mime_guess.workspace = true
+log.workspace = true
+dirs.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+sha2.workspace = true
+hex.workspace = true

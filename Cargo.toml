@@ -1,0 +1,33 @@
+[workspace]
+resolver = "2"
+members = ["crates/*"]
+
+[workspace.package]
+version = "0.0.1"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/YOUR-GITHUB-USER/morph"
+authors = ["The Metamorphosis contributors"]
+rust-version = "1.80"
+
+[workspace.dependencies]
+morph-core = { path = "crates/morph-core" }
+anyhow = "1"
+thiserror = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+clap = { version = "4", features = ["derive"] }
+infer = "0.19"
+mime_guess = "2"
+tempfile = "3"
+sha2 = "0.10"
+hex = "0.4"
+dirs = "6"
+toml = "0.9"
+glob = "0.3"
+log = "0.4"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true
