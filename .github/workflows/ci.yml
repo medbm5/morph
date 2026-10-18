@@ -49,3 +49,23 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - name: Fail on network crates outside the updater
         run: python3 scripts/offline_guard.py
+
+  hud:
+    name: HUD gallery (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-22.04]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - working-directory: app
+        run: npm ci
+      - working-directory: app
+        run: npx playwright install --with-deps chromium webkit
+      - name: Visual snapshots, reduced motion, forced colours, offline fonts
+        working-directory: app
+        run: node tests/visual.mjs
