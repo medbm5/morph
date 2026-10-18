@@ -48,11 +48,27 @@ pub enum RingKind {
 /// A raw input event from a backend. Coordinates are physical screen pixels.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Raw {
-    ButtonDown { x: i32, y: i32 },
-    ButtonUp { x: i32, y: i32 },
-    Move { x: i32, y: i32 },
+    ButtonDown {
+        x: i32,
+        y: i32,
+    },
+    ButtonUp {
+        x: i32,
+        y: i32,
+    },
+    Move {
+        x: i32,
+        y: i32,
+    },
     KeyDown(Key),
     KeyUp(Key),
+    /// The next button press comes from touch or pen (Windows marks these).
+    TouchDown {
+        x: i32,
+        y: i32,
+    },
+    /// Periodic tick while a drag is active (drives touch hold-to-open).
+    Tick,
 }
 
 /// What the app should do.
@@ -157,6 +173,12 @@ pub struct Machine {
     held: Option<(Key, Instant, bool)>,
     /// Last known cursor position.
     pos: (i32, i32),
+    /// Current drag started from touch: hold still to open the ring.
+    touch: bool,
+    /// Where and when the pointer last moved noticeably (touch hold detection).
+    still_since: Option<((i32, i32), Instant)>,
+    /// How long a touch drag must hold still to open the ring.
+    pub touch_hold: Duration,
 }
 
 impl Default for Machine {
@@ -174,6 +196,9 @@ impl Machine {
             state: State::Idle,
             held: None,
             pos: (0, 0),
+            touch: false,
+            still_since: None,
+            touch_hold: Duration::from_millis(700),
         }
     }
 
@@ -181,8 +206,14 @@ impl Machine {
         self.pos
     }
 
-    fn update_pos(&mut self, x: i32, y: i32) -> State {
+    fn update_pos(&mut self, x: i32, y: i32, now: Instant) -> State {
         self.pos = (x, y);
+        // Restart the touch-hold timer when the finger moves more than 8 px.
+        if let Some(((sx, sy), _)) = self.still_since {
+            if (x - sx) * (x - sx) + (y - sy) * (y - sy) > 64 {
+                self.still_since = Some(((x, y), now));
+            }
+        }
         self.state
     }
 
@@ -213,12 +244,31 @@ impl Machine {
     pub fn feed(&mut self, raw: Raw, now: Instant) -> Output {
         let mut out = Output::default();
         match raw {
-            Raw::ButtonDown { x, y } => {
+            Raw::ButtonDown { x, y } | Raw::TouchDown { x, y } => {
                 self.pos = (x, y);
                 self.state = State::Pressed { x, y };
                 self.held = None;
+                self.touch = matches!(raw, Raw::TouchDown { .. });
+                self.still_since = Some(((x, y), now));
             }
-            Raw::Move { x, y } => match self.update_pos(x, y) {
+            Raw::Tick => {
+                // Touch: no keyboard to tap, so holding still mid-drag opens the Convert ring.
+                if let (true, State::Dragging, Some(((sx, sy), at))) =
+                    (self.touch, self.state, self.still_since)
+                {
+                    let (dx, dy) = (self.pos.0 - sx, self.pos.1 - sy);
+                    if dx * dx + dy * dy <= 64 && now.duration_since(at) >= self.touch_hold {
+                        self.state = State::Open(RingKind::Convert);
+                        let (x, y) = self.pos;
+                        out.actions.push(Action::Open {
+                            ring: RingKind::Convert,
+                            x,
+                            y,
+                        });
+                    }
+                }
+            }
+            Raw::Move { x, y } => match self.update_pos(x, y, now) {
                 State::Pressed { x: ox, y: oy } => {
                     let (dx, dy) = (x - ox, y - oy);
                     if dx * dx + dy * dy >= self.drag_threshold * self.drag_threshold {
@@ -423,6 +473,35 @@ mod tests {
         drag(&mut m, t);
         let o = m.feed(Raw::KeyDown(Key::Digit(1)), t);
         assert!(o.actions.is_empty() && !o.consume);
+    }
+
+    #[test]
+    fn touch_hold_opens_the_ring() {
+        let t = Instant::now();
+        let ms = |n| t + Duration::from_millis(n);
+        let mut m = Machine::default();
+        m.feed(Raw::TouchDown { x: 0, y: 0 }, t);
+        m.feed(Raw::Move { x: 40, y: 0 }, ms(50));
+        assert!(m.is_dragging());
+        // Still moving: no ring.
+        m.feed(Raw::Move { x: 80, y: 0 }, ms(400));
+        assert!(m.feed(Raw::Tick, ms(800)).actions.is_empty());
+        // Hold still for 700 ms.
+        m.feed(Raw::Move { x: 82, y: 1 }, ms(900));
+        assert!(m.feed(Raw::Tick, ms(1000)).actions.is_empty());
+        assert_eq!(
+            m.feed(Raw::Tick, ms(1150)).actions,
+            vec![Action::Open {
+                ring: RingKind::Convert,
+                x: 82,
+                y: 1
+            }]
+        );
+        // Mouse drags never open by holding.
+        let mut m = Machine::default();
+        m.feed(Raw::ButtonDown { x: 0, y: 0 }, t);
+        m.feed(Raw::Move { x: 40, y: 0 }, ms(50));
+        assert!(m.feed(Raw::Tick, ms(5000)).actions.is_empty());
     }
 
     #[test]

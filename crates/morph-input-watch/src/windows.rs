@@ -65,7 +65,26 @@ pub fn start(machine: Arc<Mutex<Machine>>, sink: Sink) -> anyhow::Result<Box<dyn
             }
         })?;
     let tid = rx.recv()??;
+    // Ticks drive touch hold-to-open (a still finger sends no events).
+    let ticking = Arc::new(std::sync::atomic::AtomicBool::new(true));
+    let t2 = ticking.clone();
+    std::thread::Builder::new()
+        .name("morph-input-tick".into())
+        .spawn(move || {
+            while t2.load(std::sync::atomic::Ordering::Relaxed) {
+                std::thread::sleep(std::time::Duration::from_millis(100));
+                let dragging = shared()
+                    .lock()
+                    .unwrap()
+                    .as_ref()
+                    .is_some_and(|s| s.machine.lock().unwrap().is_dragging());
+                if dragging {
+                    feed(Raw::Tick);
+                }
+            }
+        })?;
     Ok(Box::new(move || unsafe {
+        ticking.store(false, std::sync::atomic::Ordering::Relaxed);
         let _ = PostThreadMessageW(tid, WM_QUIT, WPARAM(0), LPARAM(0));
         *shared().lock().unwrap() = None;
     }))
@@ -138,7 +157,10 @@ unsafe extern "system" fn mouse_proc(code: i32, wparam: WPARAM, lparam: LPARAM) 
     if code == HC_ACTION as i32 {
         let ms = &*(lparam.0 as *const MSLLHOOKSTRUCT);
         let (x, y) = (ms.pt.x, ms.pt.y);
+        // Mouse messages promoted from touch/pen carry this signature.
+        let touch = ms.dwExtraInfo & 0xFFFF_FF00 == 0xFF51_5700;
         let raw = match wparam.0 as u32 {
+            WM_LBUTTONDOWN if touch => Some(Raw::TouchDown { x, y }),
             WM_LBUTTONDOWN => Some(Raw::ButtonDown { x, y }),
             WM_LBUTTONUP => Some(Raw::ButtonUp { x, y }),
             WM_MOUSEMOVE => Some(Raw::Move { x, y }),
