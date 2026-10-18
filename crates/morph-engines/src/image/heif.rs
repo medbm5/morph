@@ -18,7 +18,9 @@ pub fn available() -> bool {
         // aren't on Windows Server or some N editions): decode a tiny AVIF once to know.
         static PROBE: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
         *PROBE.get_or_init(|| {
-            let Ok(dir) = tempfile_dir() else { return false };
+            let Ok(dir) = tempfile_dir() else {
+                return false;
+            };
             let probe = dir.join("probe.avif");
             let ok = image::RgbImage::from_pixel(8, 8, image::Rgb([200, 120, 40]))
                 .save(&probe)
