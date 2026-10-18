@@ -36,8 +36,11 @@ jobs:
       - name: Clippy
         run: cargo clippy --workspace --all-targets
       - name: Test
+        shell: bash
         run: |
           python3 scripts/fetch_pdfium.py
+          python3 scripts/fetch_ffmpeg.py
+          cargo run -q -p morph-cli -- component install ffmpeg
           cargo test --workspace
       - name: DOCX opens in LibreOffice
         if: runner.os == 'Linux'
