@@ -49,6 +49,11 @@ enum Command {
         #[arg(trailing_var_arg = true, allow_hyphen_values = true, required = true)]
         rest: Vec<String>,
     },
+    /// Manage optional components (local AI, OCR, FFmpeg, pandoc…).
+    Component {
+        #[command(subcommand)]
+        action: ComponentAction,
+    },
     /// List the operations available for some files.
     List {
         /// Files to check.
@@ -61,6 +66,16 @@ enum Command {
         #[arg(long, short)]
         verbose: bool,
     },
+}
+
+#[derive(Subcommand)]
+enum ComponentAction {
+    /// Show every component and whether it is installed.
+    List,
+    /// Download, verify (SHA-256) and install a component.
+    Install { name: String },
+    /// Remove an installed component.
+    Remove { name: String },
 }
 
 fn main() -> ExitCode {
@@ -97,6 +112,10 @@ fn run(cli: Cli, registry: &Registry) -> Result<bool> {
                 },
             )
         }
+        Command::Component { action } => {
+            component(action)?;
+            Ok(true)
+        }
         Command::Tool {
             name,
             out_dir,
@@ -124,6 +143,48 @@ fn run(cli: Cli, registry: &Registry) -> Result<bool> {
             Ok(true)
         }
     }
+}
+
+fn component(action: ComponentAction) -> Result<()> {
+    match action {
+        ComponentAction::List => {
+            for c in morph_updater::status() {
+                let mark = if c.installed { "installed" } else { "-" };
+                println!(
+                    "{:<10} {:<10} {:>8}  {}",
+                    c.name,
+                    mark,
+                    format!("{:.1} MB", c.download_size as f64 / 1e6),
+                    c.title
+                );
+                if let Some(h) = c.system_hint {
+                    println!("{:<21}{h}", "");
+                }
+            }
+            println!("\nfolder: {}", morph_core::components::root().display());
+        }
+        ComponentAction::Install { name } => {
+            let fancy = std::io::stderr().is_terminal();
+            morph_updater::install(&name, &move |done, total, _| {
+                if fancy {
+                    eprint!(
+                        "\r{:>5.1} / {:.1} MB",
+                        done as f64 / 1e6,
+                        total as f64 / 1e6
+                    );
+                }
+            })?;
+            if fancy {
+                eprintln!();
+            }
+            println!("✓ installed {name} (checksums verified)");
+        }
+        ComponentAction::Remove { name } => {
+            morph_updater::remove(&name)?;
+            println!("removed {name}");
+        }
+    }
+    Ok(())
 }
 
 /// Input files among trailing arguments: those that exist or are globs.

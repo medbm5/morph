@@ -15,6 +15,7 @@ morph-core = { path = "crates/morph-core" }
 morph-engines = { path = "crates/morph-engines" }
 morph-input-watch = { path = "crates/morph-input-watch" }
 morph-platform = { path = "crates/morph-platform" }
+morph-updater = { path = "crates/morph-updater" }
 anyhow = "1"
 thiserror = "2"
 serde = { version = "1", features = ["derive"] }

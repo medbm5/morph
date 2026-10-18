@@ -17,5 +17,6 @@ morph-core.workspace = true
 clap.workspace = true
 anyhow.workspace = true
 morph-engines.workspace = true
+morph-updater.workspace = true
 serde_json.workspace = true
 glob.workspace = true
