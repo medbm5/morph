@@ -13,6 +13,8 @@ rust-version = "1.85"
 [workspace.dependencies]
 morph-core = { path = "crates/morph-core" }
 morph-engines = { path = "crates/morph-engines" }
+morph-input-watch = { path = "crates/morph-input-watch" }
+morph-platform = { path = "crates/morph-platform" }
 anyhow = "1"
 thiserror = "2"
 serde = { version = "1", features = ["derive"] }
@@ -32,3 +34,10 @@ log = "0.4"
 lto = "thin"
 codegen-units = 1
 strip = true
+
+# Smaller debug info: much faster linking on Windows; backtraces keep line numbers.
+[profile.dev]
+debug = "line-tables-only"
+
+[profile.dev.package."*"]
+debug = false
