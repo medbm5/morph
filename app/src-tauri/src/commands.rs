@@ -694,3 +694,27 @@ pub async fn preview_op(
     .await
     .map_err(|e| e.to_string())?
 }
+
+/// Page thumbnails of a PDF (cached JPEGs) for the organizer and merge editors.
+#[tauri::command]
+pub async fn pdf_thumbs(path: PathBuf, width: u32) -> Result<Vec<PathBuf>, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let dir = frame_cache().join(format!("{}-pdf-{width}", cache_key(&path)));
+        if !dir.join(".done").exists() {
+            let _ = std::fs::remove_dir_all(&dir);
+            std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+            morph_engines::pdf::render_thumbs(&path, width, &dir).map_err(|e| format!("{e:#}"))?;
+            let _ = std::fs::write(dir.join(".done"), "");
+        }
+        let mut v: Vec<PathBuf> = std::fs::read_dir(&dir)
+            .map_err(|e| e.to_string())?
+            .flatten()
+            .map(|e| e.path())
+            .filter(|p| p.extension().is_some_and(|e| e == "jpg"))
+            .collect();
+        v.sort();
+        Ok(v)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}

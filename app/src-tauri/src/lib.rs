@@ -50,6 +50,7 @@ pub fn run() {
             commands::audio_peaks,
             commands::audio_loudness,
             commands::preview_op,
+            commands::pdf_thumbs,
             expanded::expanded_request,
         ])
         .setup(|app| {
