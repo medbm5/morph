@@ -96,6 +96,23 @@ impl Registry {
         })
     }
 
+    /// A tool or action by short name (`crop`, `compress`, `bg`, `strip`) for these inputs.
+    pub fn find_tool(&self, name: &str, kinds: &[Kind]) -> Option<&Arc<dyn Operation>> {
+        [Ring::Tools, Ring::Actions]
+            .into_iter()
+            .flat_map(|r| self.for_selection(kinds, r))
+            .find(|op| tool_matches(op.spec(), name))
+    }
+
+    /// Resolve a chain step: a concrete id, `convert:<ext>` or `tool:<name>`.
+    pub fn resolve(&self, op: &str, kinds: &[Kind]) -> Option<&Arc<dyn Operation>> {
+        match op.split_once(':') {
+            Some(("convert", ext)) => self.converter(ext, kinds),
+            Some(("tool", name)) => self.find_tool(name, kinds),
+            _ => self.get(op),
+        }
+    }
+
     /// Specs for a selection, for the UI and `morph list --for`.
     pub fn specs_for(&self, kinds: &[Kind], ring: Ring) -> Vec<OpSpec> {
         self.for_selection(kinds, ring)
@@ -103,6 +120,19 @@ impl Registry {
             .map(|o| o.spec().clone())
             .collect()
     }
+}
+
+/// Does `name` (case-insensitive, `-`/`_`/space equivalent) name this tool?
+/// Matches the id's last part (`image.crop` → `crop`), the label (`Add BG` → `add-bg`)
+/// or any word of the label (`bg`).
+pub fn tool_matches(spec: &OpSpec, name: &str) -> bool {
+    let want = name.to_ascii_lowercase().replace([' ', '_'], "-");
+    if spec.id == name {
+        return true;
+    }
+    let short = spec.id.rsplit('.').next().unwrap_or(&spec.id);
+    let label = spec.label.to_ascii_lowercase().replace(' ', "-");
+    short == want || label == want || label.split('-').any(|w| w == want)
 }
 
 fn is_identity(spec: &OpSpec, kinds: &[Kind]) -> bool {

@@ -4,15 +4,19 @@
 //! Engines implement [`Operation`]; the app and the `morph` CLI share one
 //! [`Registry`], so anything the ring can do, the CLI can do.
 
+pub mod chain;
 pub mod components;
+pub mod history;
 pub mod job;
 pub mod kind;
 pub mod naming;
 pub mod op;
 pub mod output;
 pub mod progress;
+pub mod recipe;
 pub mod registry;
 
+pub use chain::Step;
 pub use job::{Job, JobEvent, JobReport, Runner};
 pub use kind::{detect, Family, Kind};
 pub use naming::Naming;
