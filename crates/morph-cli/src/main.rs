@@ -49,6 +49,21 @@ enum Command {
         #[arg(trailing_var_arg = true, allow_hyphen_values = true, required = true)]
         rest: Vec<String>,
     },
+    /// Run a recipe (built-in or from your recipes folder) on files.
+    Run {
+        /// Recipe name or id, e.g. "Square post" or square-post.
+        recipe: String,
+        #[arg(required = true, num_args = 1..)]
+        files: Vec<String>,
+    },
+    /// Chain operations: `morph chain report.pdf "convert:jpg" "crop:1:1" "bg:preset=soft"`.
+    Chain {
+        /// The file to start from.
+        file: String,
+        /// Steps: convert:<format>, <tool>:<value> or <tool>:key=value,…
+        #[arg(required = true, num_args = 1..)]
+        steps: Vec<String>,
+    },
     /// Manage optional components (local AI, OCR, FFmpeg, pandoc…).
     Component {
         #[command(subcommand)]
@@ -80,7 +95,10 @@ enum ComponentAction {
 
 fn main() -> ExitCode {
     let cli = Cli::parse();
-    let registry = morph_engines::registry();
+    let (registry, recipe_errors) = morph_engines::registry_with_recipes();
+    for (path, e) in recipe_errors {
+        eprintln!("morph: skipping recipe {}: {e}", path.display());
+    }
     match run(cli, &registry) {
         Ok(true) => ExitCode::SUCCESS,
         Ok(false) => ExitCode::from(1),
@@ -111,6 +129,35 @@ fn run(cli: Cli, registry: &Registry) -> Result<bool> {
                     out_dir,
                 },
             )
+        }
+        Command::Run { recipe, files } => {
+            let want = recipe.to_lowercase();
+            let op = registry
+                .all()
+                .find(|o| {
+                    let s = o.spec();
+                    s.id.starts_with("recipe.")
+                        && (s.label.to_lowercase() == want
+                            || s.id == format!("recipe.{want}")
+                            || s.id == want)
+                })
+                .with_context(|| format!("no recipe `{recipe}` (see `morph list --for <file>`)"))?;
+            let files = args::expand(files)?;
+            run_job(registry, Job::new(&op.spec().id.clone(), files))
+        }
+        Command::Chain { file, steps } => {
+            let files = args::expand([file])?;
+            let steps: Vec<morph_core::Step> = steps
+                .iter()
+                .map(|s| morph_core::recipe::parse_step(s))
+                .collect::<Result<_>>()?;
+            let runner = Runner::new(registry);
+            let report = runner.run_chain(&steps, &files, |ev| match ev {
+                JobEvent::Saved { path } => println!("✓ SAVED · {}", path.display()),
+                JobEvent::Failed { error, .. } => eprintln!("✗ {error}"),
+                _ => {}
+            })?;
+            Ok(report.ok())
         }
         Command::Component { action } => {
             component(action)?;
@@ -212,27 +259,13 @@ fn find_tool<'r>(
     name: &str,
     kinds: &[Kind],
 ) -> Result<&'r std::sync::Arc<dyn morph_core::Operation>> {
-    let want = name.to_ascii_lowercase().replace([' ', '_'], "-");
-    let candidates = [Ring::Tools, Ring::Actions]
-        .into_iter()
-        .flat_map(|r| registry.for_selection(kinds, r));
-    for op in candidates {
-        let s = op.spec();
-        let short = s.id.rsplit('.').next().unwrap_or(&s.id);
-        let label = s.label.to_ascii_lowercase().replace(' ', "-");
-        if short == want
-            || label == want
-            || s.id == name
-            || label.split('-').next() == Some(want.as_str())
-        {
-            return Ok(op);
-        }
-    }
-    let labels: Vec<_> = kinds.iter().map(Kind::label).collect();
-    anyhow::bail!(
-        "no tool `{name}` for {} files (see `morph list --for <file>`)",
-        labels.join(", ")
-    )
+    registry.find_tool(name, kinds).with_context(|| {
+        let labels: Vec<_> = kinds.iter().map(Kind::label).collect();
+        format!(
+            "no tool `{name}` for {} files (see `morph list --for <file>`)",
+            labels.join(", ")
+        )
+    })
 }
 
 /// Map common aliases to our canonical extensions.
