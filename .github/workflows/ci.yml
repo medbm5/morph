@@ -75,6 +75,10 @@ jobs:
         run: npm ci
       - working-directory: app
         run: npx playwright install --with-deps chromium webkit
+      - uses: dtolnay/rust-toolchain@stable
       - name: Visual snapshots, reduced motion, forced colours, offline fonts
         working-directory: app
         run: node tests/visual.mjs
+      - name: Photo editor preview matches export (ΔE < 2)
+        working-directory: app
+        run: node tests/adjust-parity.mjs
