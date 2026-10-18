@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HUD Gallery</title>
+<link rel="stylesheet" href="hud/tokens.css">
+<link rel="stylesheet" href="hud/ring.css">
+<link rel="stylesheet" href="hud/panels.css">
+<style>
+html, body { margin: 0; }
+body { padding: 32px; }
+h1 { margin: 0 0 6px; font-size: 18px; letter-spacing: 6px; color: var(--hud-line); }
+.intro { margin: 0 0 28px; font-family: var(--font-readout); font-size: 12px; color: var(--hud-muted); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px; }
+.card { border: 1px solid var(--hud-line-25); padding: 14px; background: rgba(4, 10, 18, .5); }
+.card h2 { margin: 0 0 10px; font: 600 11px var(--font-readout); letter-spacing: 2px; color: var(--hud-muted); }
+.card .hud { width: 100%; max-width: 320px; margin: 0 auto; }
+.wide { grid-column: 1 / -1; }
+.wide .panel-host { min-height: 640px; position: relative; }
+.wide .panel-host .hud-frame { min-height: 640px; }
+.wallpaper { background: linear-gradient(135deg, #f4f1e8, #cfd8dc 40%, #fff6dd); padding: 10px; }
+.contrast { font-family: var(--font-readout); font-size: 12px; display: grid; grid-template-columns: 26px 90px 1fr; gap: 8px; align-items: center; }
+.contrast span.s { width: 18px; height: 18px; border-radius: 50%; display: inline-block; }
+/* Snapshot mode: freeze every animation at its final frame. */
+.hud-static *, .hud-static *::before, .hud-static *::after { animation: none !important; transition: none !important; }
+</style>
+</head>
+<body class="hud-grid">
+<h1>HUD COMPONENT GALLERY</h1>
+<p class="intro">Every state of the S2 design system. Add <code>?static</code> to freeze motion (visual snapshots), <code>?reduced</code> to force reduced motion.</p>
+<div class="grid" id="grid"></div>
+
+<script src="hud/ring.js"></script>
+<script src="hud/panels.js"></script>
+<script>
+(() => {
+  const q = new URLSearchParams(location.search);
+  const frozen = q.has('static');
+  const reduced = q.has('reduced');
+  if (frozen) document.documentElement.classList.add('hud-static');
+
+  const convert = ['JPG', 'PNG', 'WebP', 'AVIF', 'TIFF', 'PDF', 'BMP'].map((l, i) => ({ id: 'c' + i, label: l }));
+  const tools = ['Compress', 'Metadata', 'Edit', 'Annotate', 'Add BG', 'Crop', 'Redact'].map((l, i) => ({ id: 't' + i, label: l }));
+  const actions = ['Share', 'Float', 'Copy', 'Move', 'Copy path', 'Terminal'].map((l, i) => ({ id: 'a' + i, label: l }));
+  const file = { size: '1.1 MB', type: 'JPG' };
+  const grid = document.getElementById('grid');
+
+  function card(title, cls) {
+    const c = hudEl('section', { class: 'card' + (cls ? ' ' + cls : '') }, hudEl('h2', { text: title }));
+    grid.append(c);
+    return c;
+  }
+  function ring(title, opts, after) {
+    const c = card(title, opts.cardClass);
+    const host = hudEl('div');
+    (opts.wrap ? (() => { const w = hudEl('div', { class: opts.wrap }); c.append(w); return w; })() : c).append(host);
+    const r = createHudRing(host, Object.assign({ file, reduced, boot: !frozen }, opts));
+    if (after) after(r, host);
+    return r;
+  }
+
+  ring('IDLE · CONVERT RING', { items: convert, ringName: 'CONVERT' });
+  ring('HOVER · TOOLS RING', { items: tools, ringName: 'TOOLS' }, (r) => r.setHot(3));
+  ring('ACTIONS RING', { items: actions, ringName: 'ACTIONS', file: { size: '3 ITEMS', type: 'MIXED' } }, (r) => r.setHot(4));
+  ring('THREE SEGMENTS', { items: convert.slice(0, 3), ringName: 'CONVERT' }, (r) => r.setHot(1));
+  ring('ONE SEGMENT', { items: [{ id: 'x', label: 'Extract' }], ringName: 'TOOLS', file: { size: '24 MB', type: 'ZIP' } });
+  ring('MORE · PAGE 1 OF 2', {
+    items: ['MP4', 'MOV', 'MKV', 'WebM', 'AVI', 'WMV', 'GIF', 'MP3'].map((l) => ({ id: l, label: l })),
+    ringName: 'CONVERT', file: { size: '88 MB', type: 'MOV' },
+  }, (r) => r.setHot(6));
+  ring('INSTALL COMPONENT', {
+    items: [{ id: 'p', label: 'PDF' }, { id: 'j', label: 'JPG' }, { id: 'x', label: 'PPTX', disabled: true, badge: 'INSTALL' }],
+    ringName: 'CONVERT', file: { size: '4.2 MB', type: 'KEY' },
+  }, (r) => r.setHot(2));
+  ring('ON A LIGHT WALLPAPER', { items: tools, ringName: 'TOOLS', wrap: 'wallpaper' }, (r) => r.setHot(5));
+  ring('TOAST · SAVED', { items: convert, ringName: 'CONVERT' }, (r) => r.saved('Page 001 Annotated.jpg', { ms: 0 }));
+  ring('PROGRESS CARD', { items: convert, ringName: 'CONVERT' }, (r) => r.progress(2, 5, 0.4, 'Page 003.png'));
+  ring('ERROR', { items: convert, ringName: 'CONVERT' }, (r) => r.toast('<b>✗ FAILED</b> · not a valid PDF', { error: true, ms: 0 }));
+  ring('DONE · SHOW IN FOLDER', { items: convert, ringName: 'CONVERT' }, (r) =>
+    r.saved('5 files · Page 001.png…', { ms: 0, actions: [{ label: 'SHOW IN FOLDER', run() {} }, { label: 'UNDO', run() {} }] }));
+  ring('COLLAPSED (DROP)', { items: convert, ringName: 'CONVERT' }, (r, host) => { if (!frozen) r.collapse(); else host.classList.add('hud-collapsed'); });
+  ring('REDUCED MOTION', { items: tools, ringName: 'TOOLS', reduced: true }, (r) => r.setHot(0));
+
+  [['AMBER', '#FFB347'], ['CYAN', '#4FE3FF'], ['PINK', '#FF5EA8'], ['LIME', '#9CFF6E']].forEach(([n, c]) =>
+    ring('ACCENT · ' + n, { items: tools.slice(0, 5), ringName: 'TOOLS', accent: c }, (r) => r.setHot(2)));
+
+  const cc = card('ACCENT CONTRAST VS --hud-core (≥ 4.5 REQUIRED)');
+  const table = hudEl('div', { class: 'contrast' });
+  ['#FFB347', '#4FE3FF', '#FF5EA8', '#9CFF6E', '#3355AA', '#7A2E2E'].forEach((c) => {
+    const ratio = HudColor.accentContrast(c);
+    table.append(hudEl('span', { class: 's', style: `background:${c}` }), hudEl('span', { text: c }),
+      hudEl('span', { class: ratio >= 4.5 ? 'hud-armed' : 'hud-danger', text: `${ratio.toFixed(2)}:1 ${ratio >= 4.5 ? 'OK' : 'TOO LOW'}` }));
+  });
+  cc.append(table);
+
+  // Expanded mode
+  const wide = card('EXPANDED MODE', 'wide');
+  const host = hudEl('div', { class: 'panel-host' });
+  wide.append(host);
+  const panel = createHudPanel(host, { version: '0.2.0' });
+  panel.setTarget({ name: 'Page 001.jpg', type: 'JPEG IMAGE', size: '1.1 MB', dim: '1240 × 1754' });
+  const outs = ['Compressed', 'Clean', 'Edited', 'Annotated', 'With BG', 'Cropped', 'Redacted'];
+  const mount = hudEl('div');
+  panel.centre.append(mount);
+  const er = createHudRing(mount, {
+    items: tools, file, ringName: 'TOOLS', reduced, boot: !frozen,
+    onHover: (it, i) => { panel.setHot(i); panel.setOutput(`Page 001 ${outs[i]}.${i === 4 ? 'png' : 'jpg'}`); },
+    onSelect: (it, i) => {
+      er.collapse(); er.saved(`Page 001 ${outs[i]}.${i === 4 ? 'png' : 'jpg'}`, { delay: 380 });
+      panel.setStatus(`✓ SAVED · Page 001 ${outs[i]}.jpg`);
+      setTimeout(() => er.boot(), 2100);
+    },
+  });
+  panel.setActions(tools, { onPick: (it, i) => er.select(i), onHover: (it, i) => er.setHot(i) });
+  er.setHot(3);
+
+  if (!frozen) er.measureIdle(1500).then((m) => { document.title = `HUD Gallery · ${m.median.toFixed(1)} ms/frame`; });
+  document.documentElement.dataset.ready = '1';
+})();
+</script>
+</body>
+</html>
