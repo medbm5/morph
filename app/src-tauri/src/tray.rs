@@ -2,25 +2,30 @@
 
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 
-pub fn create(app: &AppHandle) -> tauri::Result<()> {
-    let undo = MenuItem::with_id(app, "undo", "Undo last job", true, None::<&str>)?;
-    let history = MenuItem::with_id(app, "history", "History…", true, None::<&str>)?;
-    let components = MenuItem::with_id(app, "components", "Components…", true, None::<&str>)?;
-    let clip = MenuItem::with_id(
-        app,
+/// The tray menu in the current language.
+fn menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
+    let fr = crate::settings::language(&app.state::<crate::state::AppState>().settings()) == "fr";
+    let tr = |en: &'static str, fr_: &'static str| if fr { fr_ } else { en };
+    let item = |id: &str, en: &'static str, fr_: &'static str| {
+        MenuItem::with_id(app, id, tr(en, fr_), true, None::<&str>)
+    };
+    let undo = item("undo", "Undo last job", "Annuler la dernière tâche")?;
+    let history = item("history", "History…", "Historique…")?;
+    let components = item("components", "Components…", "Composants…")?;
+    let settings = item("settings", "Settings…", "Réglages…")?;
+    let clip = item(
         "clipboard",
         "Image from clipboard…",
-        true,
-        None::<&str>,
+        "Image du presse-papiers…",
     )?;
-    let float = MenuItem::with_id(app, "float", "Float shelf", true, None::<&str>)?;
-    let dock = MenuItem::with_id(app, "dock", "Drop dock", true, None::<&str>)?;
-    let about = MenuItem::with_id(app, "about", "About Metamorphosis", true, None::<&str>)?;
-    let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+    let float = item("float", "Float shelf", "Étagère flottante")?;
+    let dock = item("dock", "Drop dock", "Zone de dépôt")?;
+    let about = item("about", "About Metamorphosis", "À propos de Metamorphosis")?;
+    let quit = item("quit", "Quit", "Quitter")?;
     let sep = || PredefinedMenuItem::separator(app);
-    let menu = Menu::with_items(
+    Menu::with_items(
         app,
         &[
             &clip,
@@ -30,13 +35,24 @@ pub fn create(app: &AppHandle) -> tauri::Result<()> {
             &undo,
             &history,
             &components,
+            &settings,
             &sep()?,
             &about,
             &sep()?,
             &quit,
         ],
-    )?;
+    )
+}
 
+/// Rebuild the menu after a language change.
+pub fn refresh(app: &AppHandle) {
+    if let (Some(tray), Ok(m)) = (app.tray_by_id("main"), menu(app)) {
+        let _ = tray.set_menu(Some(m));
+    }
+}
+
+pub fn create(app: &AppHandle) -> tauri::Result<()> {
+    let menu = menu(app)?;
     TrayIconBuilder::with_id("main")
         .icon(app.default_window_icon().cloned().expect("bundled icon"))
         .tooltip("Metamorphosis")
@@ -64,6 +80,9 @@ pub fn create(app: &AppHandle) -> tauri::Result<()> {
                 if let Err(e) = crate::dock::show(app) {
                     log::warn!("dock: {e:#}");
                 }
+            }
+            "settings" => {
+                let _ = crate::settings::open_settings(app.clone());
             }
             "components" => {
                 let _ = crate::commands::open_components(app.clone(), None);

@@ -1,17 +1,22 @@
 /* Metamorphosis — drop dock: expands into the ring when files are dragged onto it. */
 (() => {
   const T = window.__TAURI__, invoke = T.core.invoke;
+  const L = window.MorphLook;
   const NAMES = ['convert', 'tools', 'actions'];
   const tabs = document.getElementById('tabs');
   let kind = 'convert', paths = [], expanded = false, busy = false, hoverTab = null, hoverAt = 0;
   const ring = createHudRing(document.getElementById('host'), { items: [], boot: false });
-  NAMES.forEach((n) => { const s = document.createElement('span'); s.textContent = n.toUpperCase(); s.dataset.k = n; tabs.append(s); });
+  NAMES.forEach((n) => { const s = document.createElement('span'); s.textContent = L.t(`ring.${n}`, n.toUpperCase()); s.dataset.k = n; tabs.append(s); });
+  L.onChange((look) => {
+    ring.setReduced(look.reduced);
+    tabs.querySelectorAll('span').forEach((t) => { t.textContent = L.t(`ring.${t.dataset.k}`, t.dataset.k.toUpperCase()); });
+  });
   const markTabs = () => tabs.querySelectorAll('span').forEach((s) => s.classList.toggle('on', s.dataset.k === kind));
 
   async function load() {
     markTabs();
     const r = await invoke('ring_items', { paths, ring: kind });
-    ring.setItems(r.items, { ringName: kind.toUpperCase(), file: { size: r.file.size, type: r.file.type }, animate: 'switch' });
+    ring.setItems(r.items.map((it) => ({ ...it, label: L.label(it.label) })), { ringName: L.t(`ring.${kind}`, kind.toUpperCase()), file: { size: r.file.size, type: r.file.type }, animate: 'switch' });
   }
   async function expand(on) {
     if (on === expanded) return;
@@ -61,7 +66,7 @@
         if (ev.event === 'finished') {
           un();
           const done = () => { busy = false; expand(false); };
-          if (errors.length && !saved.length) ring.toast(`<b>✗ FAILED</b> · ${esc(errors[0])}`, { error: true, ms: 2600, onHide: done });
+          if (errors.length && !saved.length) ring.toast(`<b>${L.t('toast.failed', '✗ FAILED')}</b> · ${esc(errors[0])}`, { error: true, ms: 2600, onHide: done });
           else ring.saved(saved.length === 1 ? base(saved[0]) : `${saved.length || 'DONE'} · ${item.label}`, { delay: 380, ms: 1800, onHide: done });
         }
       });

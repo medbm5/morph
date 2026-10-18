@@ -9,7 +9,8 @@
   const T = window.__TAURI__;
   const invoke = T.core.invoke;
   const listen = T.event.listen;
-  const RING_NAMES = { convert: 'CONVERT', tools: 'TOOLS', actions: 'ACTIONS' };
+  const L = window.MorphLook;
+  const RING_NAMES = new Proxy({}, { get: (_, k) => L.t(`ring.${String(k)}`, String(k).toUpperCase()) });
 
   let ringKind = 'convert';
   let paths = [];          // what's being dragged (drop target wins over prefetch)
@@ -35,7 +36,7 @@
     try {
       const r = await invoke('ring_items', { paths, ring: ringKind });
       if (pathsKey !== key) return; // a newer selection arrived meanwhile
-      ring.setItems(r.items, { ringName: RING_NAMES[ringKind], file: { size: r.file.size, type: r.file.type }, animate });
+      ring.setItems(r.items.map((it) => ({ ...it, label: L.label(it.label) })), { ringName: RING_NAMES[ringKind], file: { size: r.file.size, type: r.file.type }, animate });
       if (locked >= 0) ring.setHot(Math.min(locked, ring.count() - 1));
     } catch (e) {
       console.warn('ring_items', e);
@@ -63,7 +64,7 @@
     ringKind = payload.ring;
     document.documentElement.classList.toggle('no-compositor', !payload.compositor);
     ring.setReduced(payload.reduced);
-    ring.setItems([], { ringName: RING_NAMES[ringKind], file: { size: 'SCANNING', type: '' }, animate: 'none' });
+    ring.setItems([], { ringName: RING_NAMES[ringKind], file: { size: L.t('ring.scanning', 'SCANNING'), type: '' }, animate: 'none' });
     ring.boot();
     requestAnimationFrame(() => requestAnimationFrame(() => invoke('ring_shown')));
     if (payload.paths && payload.paths.length) loadItems(payload.paths, 'boot');
@@ -145,7 +146,7 @@
     if (item.disabled) {
       // Missing optional component: open the installer instead of failing.
       invoke('open_components', { focus: item.component || null });
-      ring.toast(`<b>INSTALL COMPONENT</b> · ${item.component || item.label}`, { ms: 1400, onHide: close });
+      ring.toast(`<b>${L.t('toast.install', 'INSTALL COMPONENT')}</b> · ${item.component || item.label}`, { ms: 1400, onHide: close });
       return;
     }
     if (item.editor) {
@@ -182,15 +183,15 @@
     const done = job;
     job = null;
     if (done.errors.length && !done.saved.length) {
-      ring.toast(`<b>✗ FAILED</b> · ${escapeHtml(done.errors[0])}`, { error: true, ms: 3200, delay: 200, onHide: close });
+      ring.toast(`<b>${L.t('toast.failed', '✗ FAILED')}</b> · ${escapeHtml(done.errors[0])}`, { error: true, ms: 3200, delay: 200, onHide: close });
       return;
     }
-    if (e.cancelled) { ring.toast('<b>CANCELLED</b>', { ms: 1200, onHide: close }); return; }
+    if (e.cancelled) { ring.toast(`<b>${L.t('toast.cancelled', 'CANCELLED')}</b>`, { ms: 1200, onHide: close }); return; }
     const first = done.saved[0];
     const label = done.saved.length === 1 ? base(first) : `${done.saved.length} files · ${base(first)}…`;
     const actions = first ? [
       { label: 'SHOW IN FOLDER', run: () => { invoke('reveal', { path: first }); close(); } },
-      { label: 'UNDO', run: () => { invoke('undo_last').then(() => ring.toast('<b>UNDONE</b> · moved to trash', { ms: 1200, onHide: close })); } },
+      { label: L.t('toast.undo', 'UNDO'), run: () => { invoke('undo_last').then(() => ring.toast(`<b>${L.t('toast.undone', 'UNDONE')}</b> · ${L.t('toast.trash', 'moved to trash')}`, { ms: 1200, onHide: close })); } },
     ] : [];
     ring.saved(label + (done.errors.length ? ` · ${done.errors.length} failed` : ''), {
       delay: 380,

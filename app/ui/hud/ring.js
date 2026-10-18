@@ -277,7 +277,7 @@
 
     /** Saved confirmation: `✓ SAVED · Page 001 Annotated.jpg`. */
     function saved(name, o = {}) {
-      toast(`<b>✓ ${esc(o.verb || 'SAVED')}</b> · ${esc(name)}`, o);
+      toast(`<b>✓ ${esc(o.verb || (global.MorphLook ? MorphLook.t('toast.saved', 'SAVED') : 'SAVED'))}</b> · ${esc(name)}`, o);
     }
 
     function progress(done, total, fraction, text) {
