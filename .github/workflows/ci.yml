@@ -29,12 +29,21 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev \
             libxdo-dev libssl-dev libx11-dev libxi-dev libxext-dev libxcb1-dev exiftool
+      - name: Fetch PDFium
+        run: python3 scripts/fetch_pdfium.py
       - name: Format
         run: cargo fmt --all --check
       - name: Clippy
         run: cargo clippy --workspace --all-targets
       - name: Test
-        run: cargo test --workspace
+        run: |
+          python3 scripts/fetch_pdfium.py
+          cargo test --workspace
+      - name: DOCX opens in LibreOffice
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get install -y --no-install-recommends libreoffice-writer
+          python3 scripts/check_docx_libreoffice.py
       - name: CLI version matches app version
         shell: bash
         run: |
