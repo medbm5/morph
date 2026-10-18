@@ -11,3 +11,4 @@ Thumbs.db
 .idea/
 /vendor/
 /app/src-tauri/tauri.signing.conf.json
+/.lighthouseci/
