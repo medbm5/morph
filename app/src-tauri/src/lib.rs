@@ -15,7 +15,10 @@ use tauri::{Manager, RunEvent, WindowEvent};
 pub fn run() {
     logger::init();
     log::info!("Metamorphosis {} starting", morph_core::VERSION);
-    let registry = morph_engines::registry();
+    let (registry, recipe_errors) = morph_engines::registry_with_recipes();
+    for (path, e) in recipe_errors {
+        log::warn!("skipping recipe {}: {e}", path.display());
+    }
     let app = tauri::Builder::default()
         .manage(AppState::new(registry))
         .manage(expanded::Pending::default())
@@ -37,6 +40,10 @@ pub fn run() {
             commands::components_status,
             commands::install_component,
             commands::open_components,
+            commands::undo_last,
+            commands::history,
+            commands::save_recipe,
+            commands::open_history,
             expanded::expanded_request,
         ])
         .setup(|app| {

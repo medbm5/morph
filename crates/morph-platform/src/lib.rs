@@ -90,6 +90,14 @@ pub fn selection_at(x: i32, y: i32) -> Vec<PathBuf> {
     })
 }
 
+/// Move files or folders to the Recycle Bin / freedesktop Trash (Undo).
+pub fn trash(paths: &[PathBuf]) -> anyhow::Result<()> {
+    if paths.is_empty() {
+        return Ok(());
+    }
+    trash::delete_all(paths).map_err(|e| anyhow::anyhow!("moving to the trash: {e}"))
+}
+
 /// Open the containing folder with `path` selected.
 pub fn reveal(path: &Path) -> anyhow::Result<()> {
     imp::reveal(path)

@@ -191,6 +191,24 @@ pub fn run_op(
             let result = runner.run(&job, move |event| {
                 let _ = emitter.emit("job://event", JobPayload { job: id, event });
             });
+            if let Ok(report) = &result {
+                if !report.outputs.is_empty() {
+                    let label = registry
+                        .get(&job.op)
+                        .map(|o| o.spec().label.clone())
+                        .unwrap_or_default();
+                    let h = morph_core::history::History::default();
+                    match h.record(&job.op, &label, &job.inputs, &report.outputs, &job.params) {
+                        Ok(e) => {
+                            let _ = app.emit(
+                                "history://recorded",
+                                serde_json::json!({ "job": id, "entry": e }),
+                            );
+                        }
+                        Err(e) => log::warn!("history: {e}"),
+                    }
+                }
+            }
             if let Err(e) = result {
                 let _ = app.emit(
                     "job://event",
@@ -421,6 +439,80 @@ pub fn open_components(app: AppHandle, focus: Option<String>) -> Result<(), Stri
         crate::expanded::Request {
             mode: "components".into(),
             op: focus,
+            ..Default::default()
+        },
+    )
+    .map_err(|e| format!("{e:#}"))
+}
+
+/// Undo the last job: its outputs go to the Recycle Bin / Trash.
+#[tauri::command]
+pub fn undo_last() -> Result<Option<String>, String> {
+    let h = morph_core::history::History::default();
+    let Some(e) = h.last_undoable() else {
+        return Ok(None);
+    };
+    let paths = morph_core::history::existing(&e.outputs);
+    morph_platform::trash(&paths).map_err(|e| format!("{e:#}"))?;
+    h.mark_undone(e.id).map_err(|e| e.to_string())?;
+    log::info!("undid job {} ({} file(s) to trash)", e.id, paths.len());
+    Ok(Some(format!("{} · {} file(s)", e.label, paths.len())))
+}
+
+/// Recent jobs, newest first.
+#[tauri::command]
+pub fn history() -> Vec<morph_core::history::Entry> {
+    let mut v = morph_core::history::History::default().load();
+    v.reverse();
+    v
+}
+
+/// Save the drag-chain that led to `job` as a recipe in the user's recipe folder.
+#[tauri::command]
+pub fn save_recipe(state: State<AppState>, job: u64, name: String) -> Result<String, String> {
+    use morph_core::recipe::{RecipeFile, StepFile};
+    let steps = morph_core::history::History::default().chain(job);
+    if steps.is_empty() {
+        return Err("nothing to save".into());
+    }
+    let step = steps
+        .iter()
+        .map(|s| StepFile {
+            op: s.op.clone(),
+            params: serde_json::from_value(serde_json::Value::Object(s.params.0.clone()))
+                .unwrap_or_default(),
+        })
+        .collect();
+    let file = RecipeFile {
+        name: name.trim().to_string(),
+        ring: "tools".into(),
+        step,
+        ..Default::default()
+    };
+    let dir = morph_core::recipe::user_dir();
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let slug = file.id().trim_start_matches("recipe.").to_string();
+    let path = dir.join(format!("{slug}.toml"));
+    std::fs::write(&path, file.to_toml()).map_err(|e| e.to_string())?;
+    reload_registry(&state);
+    Ok(path.display().to_string())
+}
+
+/// Rebuild the registry (engines + recipes) after recipe changes.
+pub fn reload_registry(state: &AppState) {
+    let (reg, errors) = morph_engines::registry_with_recipes();
+    for (p, e) in errors {
+        log::warn!("skipping recipe {}: {e}", p.display());
+    }
+    *state.registry.write().unwrap() = Arc::new(reg);
+}
+
+#[tauri::command]
+pub fn open_history(app: AppHandle) -> Result<(), String> {
+    crate::expanded::show(
+        &app,
+        crate::expanded::Request {
+            mode: "history".into(),
             ..Default::default()
         },
     )

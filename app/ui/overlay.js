@@ -188,12 +188,14 @@
     if (e.cancelled) { ring.toast('<b>CANCELLED</b>', { ms: 1200, onHide: close }); return; }
     const first = done.saved[0];
     const label = done.saved.length === 1 ? base(first) : `${done.saved.length} files · ${base(first)}…`;
-    const actions = first ? [{ label: 'SHOW IN FOLDER', run: () => { invoke('reveal', { path: first }); close(); } }] : [];
-    const long = done.total > 1 || performance.now() - done.started > 600;
+    const actions = first ? [
+      { label: 'SHOW IN FOLDER', run: () => { invoke('reveal', { path: first }); close(); } },
+      { label: 'UNDO', run: () => { invoke('undo_last').then(() => ring.toast('<b>UNDONE</b> · moved to trash', { ms: 1200, onHide: close })); } },
+    ] : [];
     ring.saved(label + (done.errors.length ? ` · ${done.errors.length} failed` : ''), {
-      delay: long ? 0 : 380,
-      ms: long ? 2600 : 1600,
-      actions: long ? actions : [],
+      delay: 380,
+      ms: 2600,
+      actions,
       onHide: close,
     });
   }
