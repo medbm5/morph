@@ -29,6 +29,8 @@ pub fn run() {
             commands::open_editor,
             commands::op_spec,
             commands::describe,
+            commands::image_metadata,
+            commands::image_size,
             commands::trace,
             expanded::expanded_request,
         ])

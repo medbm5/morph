@@ -308,7 +308,17 @@ fn family_word(f: Family) -> &'static str {
     }
 }
 
+/// Metadata fields of an image (EXIF, GPS, XMP, IPTC) for the metadata editor.
+#[tauri::command]
+pub fn image_metadata(path: PathBuf) -> Result<Vec<morph_engines::image::metadata::Field>, String> {
+    morph_engines::image::metadata::read(&path).map_err(|e| format!("{e:#}"))
+}
 
+/// Pixel size of an image (editors size their canvas from it).
+#[tauri::command]
+pub fn image_size(path: PathBuf) -> Option<(u32, u32)> {
+    morph_engines::image::probe_size(&path)
+}
 
 /// Diagnostics from the webviews.
 #[tauri::command]
