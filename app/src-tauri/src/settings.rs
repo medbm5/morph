@@ -64,6 +64,7 @@ pub fn apply(app: &AppHandle, s: &Settings, explicit: bool) {
             }
         }
     }
+    crate::watch::folders(app, &s.watch);
     if explicit {
         crate::tray::refresh(app);
     }
@@ -211,6 +212,44 @@ pub fn set_portable(on: bool) -> Result<(), String> {
         std::fs::remove_file(&marker).map_err(|e| e.to_string())?;
     }
     Ok(())
+}
+
+/// Folder picker for watch folders.
+#[tauri::command]
+pub async fn pick_folder() -> Option<String> {
+    rfd::AsyncFileDialog::new()
+        .set_title("Watch folder")
+        .pick_folder()
+        .await
+        .map(|f| f.path().display().to_string())
+}
+
+#[derive(Serialize)]
+pub struct WatchOp {
+    pub id: String,
+    pub label: String,
+    pub ring: Ring,
+}
+
+/// Operations a watch folder can apply: conversions, tools and recipes that take
+/// one file at a time.
+#[tauri::command]
+pub fn watch_ops(state: State<AppState>) -> Vec<WatchOp> {
+    let mut ops: Vec<WatchOp> = state
+        .registry()
+        .all()
+        .filter(|o| {
+            let s = o.spec();
+            s.ring != Ring::Actions && s.arity == morph_core::Arity::Each
+        })
+        .map(|o| WatchOp {
+            id: o.spec().id.clone(),
+            label: o.spec().label.clone(),
+            ring: o.spec().ring,
+        })
+        .collect();
+    ops.sort_by(|a, b| (a.ring as u8, &a.label).cmp(&(b.ring as u8, &b.label)));
+    ops
 }
 
 #[tauri::command]

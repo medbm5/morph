@@ -31,7 +31,7 @@ const mock = () => {
   const settings = {
     keys: { convert: 'shift', tools: 'ctrl', actions: 'alt' }, accent: '#FFB347', motion: 'system',
     naming: { convert: '{stem}.{ext}', tool: '{stem} {op}.{ext}', collision: '{name} {n}', conflict: 'number' },
-    layouts: {}, history: true, autostart: true, language: 'auto',
+    layouts: {}, history: true, autostart: true, language: 'auto', watch: [],
   };
   window.__calls = [];
   const look = () => ({ accent: settings.accent, reduced: settings.motion === 'reduced', language: settings.language === 'fr' ? 'fr' : 'en' });
@@ -44,6 +44,8 @@ const mock = () => {
     layout_ops: ({ ring }) => ring === 'tools'
       ? [{ id: 'image.crop', label: 'Crop' }, { id: 'image.compress', label: 'Compress' }, { id: 'image.edit', label: 'Edit' }]
       : [{ id: 'image.to-jpg', label: 'JPG' }, { id: 'image.to-png', label: 'PNG' }, { id: 'image.to-webp', label: 'WEBP' }],
+    watch_ops: () => [{ id: 'image.to-png', label: 'PNG', ring: 'convert' }, { id: 'image.compress', label: 'Compress', ring: 'tools' }],
+    pick_folder: () => 'D:/Photos/Inbox',
     set_settings: ({ settings: s }) => { Object.assign(settings, JSON.parse(JSON.stringify(s))); emit('settings://changed', look()); },
   };
   window.__TAURI__ = {
@@ -95,6 +97,12 @@ check(await page.isVisible('text=/Page 001 - Cropped\\.jpg/'), 'naming preview f
 await page.selectOption('label:has-text("When the name is taken") select', 'skip');
 await page.waitForTimeout(400);
 check((await page.evaluate(() => window.__settings.naming.conflict)) === 'skip', 'conflict policy is saved');
+
+// Watch folders: add one (folder picker mocked), it defaults to Compress.
+await page.click('button:has-text("ADD FOLDER")');
+await page.waitForTimeout(400);
+const watch = await page.evaluate(() => window.__settings.watch);
+check(watch && watch.length === 1 && watch[0].op === 'image.compress' && watch[0].out === 'Metamorphosis', `watch folder stored (${JSON.stringify(watch)})`);
 
 const shot = process.argv.includes('--shot') ? process.argv[process.argv.indexOf('--shot') + 1] : null;
 if (shot) await page.screenshot({ path: shot, fullPage: true });

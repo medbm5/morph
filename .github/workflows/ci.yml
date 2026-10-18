@@ -54,6 +54,12 @@ jobs:
         run: |
           sudo apt-get install -y --no-install-recommends libreoffice-writer
           python3 scripts/check_docx_libreoffice.py
+      - name: Recipes hot-reload and watch folders (app end to end)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          cargo build -p metamorphosis
+          ./app/tests/e2e/watch-e2e.ps1
       - name: CLI version matches app version
         shell: bash
         run: |

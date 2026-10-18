@@ -187,6 +187,43 @@
       check(t('settings.keepHistory', 'Record jobs (Undo, Run again)'), s.history, (v) => { s.history = v; save(); }),
       h('div', { class: 'hud-row' }, openHistory)));
 
+    /* Watch folders */
+    const watchOps = await invoke('watch_ops');
+    const opName = (id) => { const o = watchOps.find((x) => x.id === id); return o ? `${o.ring === 'convert' ? '→ ' : ''}${L.label(o.label)}` : id; };
+    const watchList = h('div', { class: 'hud-list' });
+    s.watch = s.watch || [];
+    function renderWatch() {
+      watchList.textContent = '';
+      s.watch.forEach((w, i) => {
+        const row = h('div', { style: 'border:1px solid var(--hud-line-35);padding:10px 12px;display:grid;grid-template-columns:1fr auto;gap:8px 12px;align-items:center' });
+        row.append(h('span', { class: 'hud-mono', style: 'overflow-wrap:anywhere', text: w.folder }));
+        const remove = h('button', { class: 'hud-btn small', type: 'button', text: t('watch.remove', 'REMOVE') });
+        remove.addEventListener('click', () => { s.watch.splice(i, 1); save(); renderWatch(); });
+        row.append(remove);
+        const opSel = select(watchOps.map((o) => [o.id, opName(o.id)]), w.op, (v) => { w.op = v; save(); });
+        const out = h('input', { type: 'text', spellcheck: 'false', style: 'max-width:220px' });
+        out.value = w.out;
+        out.addEventListener('change', () => { w.out = out.value.trim() || 'Metamorphosis'; out.value = w.out; save(); });
+        row.append(h('div', { class: 'hud-row', style: 'gap:14px;align-items:flex-start' }, h('label', { class: 'hud-field', style: 'margin:0' }, h('span', { text: t('watch.op', 'Operation') }), opSel),
+          h('label', { class: 'hud-field', style: 'margin:0' }, h('span', { text: t('watch.out', 'Results subfolder') }), out)));
+        row.append(check(t('watch.on', 'On'), w.enabled, (v) => { w.enabled = v; save(); }));
+        watchList.append(row);
+      });
+    }
+    const addWatch = h('button', { class: 'hud-btn small', type: 'button', text: t('watch.add', 'ADD FOLDER') });
+    addWatch.addEventListener('click', async () => {
+      const folder = await invoke('pick_folder');
+      if (!folder) return;
+      const first = watchOps.find((o) => o.id === 'image.compress') || watchOps[0];
+      s.watch.push({ folder, op: first ? first.id : '', out: 'Metamorphosis', enabled: true });
+      save();
+      renderWatch();
+    });
+    renderWatch();
+    body.append(section(t('watch.title', 'WATCH FOLDERS'),
+      note(t('watch.help', 'Every new file dropped in the folder runs through the chosen operation; results go to the subfolder.')),
+      watchList, h('div', { class: 'hud-row', style: 'margin-top:8px' }, addWatch)));
+
     /* System */
     const sys = section(t('settings.system', 'SYSTEM'),
       check(t('settings.autostart', 'Start with the session'), s.autostart, (v) => { s.autostart = v; save(); }),

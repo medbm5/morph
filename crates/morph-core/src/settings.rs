@@ -25,6 +25,60 @@ pub struct Settings {
     pub autostart: bool,
     /// `auto` (follow the system), `en` or `fr`.
     pub language: String,
+    /// Folders whose new files run through an operation or recipe.
+    pub watch: Vec<WatchFolder>,
+}
+
+/// A watched folder: every new file in it runs through `op`; results go to the
+/// `out` subfolder (never the watched folder itself, so outputs aren't re-processed).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct WatchFolder {
+    pub folder: String,
+    /// Operation or recipe id (`image.compress`, `recipe.thumbnail-512`).
+    pub op: String,
+    pub out: String,
+    pub enabled: bool,
+}
+
+impl Default for WatchFolder {
+    fn default() -> Self {
+        Self {
+            folder: String::new(),
+            op: String::new(),
+            out: "Metamorphosis".into(),
+            enabled: true,
+        }
+    }
+}
+
+impl WatchFolder {
+    /// Where results go.
+    pub fn out_dir(&self) -> PathBuf {
+        let out = crate::naming::sanitize(self.out.trim());
+        Path::new(&self.folder).join(if out == "Untitled" {
+            "Metamorphosis".into()
+        } else {
+            out
+        })
+    }
+
+    /// Should a file-system event on `path` be processed? Only files directly in the
+    /// folder, skipping hidden files, our own temp files and unfinished downloads.
+    pub fn wants(&self, path: &Path) -> bool {
+        if path.parent() != Some(Path::new(&self.folder)) || path.starts_with(self.out_dir()) {
+            return false;
+        }
+        let Some(name) = path.file_name().and_then(|n| n.to_str()) else {
+            return false;
+        };
+        let lower = name.to_ascii_lowercase();
+        !(name.starts_with('.')
+            || name.starts_with("~$")
+            || [".tmp", ".part", ".crdownload", ".download", ".partial"]
+                .iter()
+                .any(|e| lower.ends_with(e)))
+    }
 }
 
 impl Default for Settings {
@@ -38,6 +92,7 @@ impl Default for Settings {
             history: true,
             autostart: true,
             language: "auto".into(),
+            watch: Vec::new(),
         }
     }
 }
@@ -220,6 +275,29 @@ mod tests {
         };
         let out = l.apply(vec!["a", "b", "c", "d", "e"], |s| s);
         assert_eq!(out, vec!["d", "c", "a", "e"]);
+    }
+
+    #[test]
+    fn watch_folder_filter() {
+        let w = WatchFolder {
+            folder: "/in".into(),
+            op: "image.compress".into(),
+            ..WatchFolder::default()
+        };
+        assert!(w.wants(Path::new("/in/photo.jpg")));
+        assert!(
+            !w.wants(Path::new("/in/Metamorphosis/photo.jpg")),
+            "outputs"
+        );
+        assert!(!w.wants(Path::new("/in/sub/photo.jpg")), "subfolders");
+        assert!(!w.wants(Path::new("/in/.morph-tmp-1")), "hidden / temp");
+        assert!(!w.wants(Path::new("/in/movie.mp4.crdownload")), "downloads");
+        assert!(!w.wants(Path::new("/elsewhere/a.jpg")));
+        let bad = WatchFolder {
+            out: "../..".into(),
+            ..w.clone()
+        };
+        assert!(bad.out_dir().starts_with("/in"));
     }
 
     #[test]

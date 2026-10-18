@@ -13,7 +13,7 @@
     'ring.scanning': 'ANALYSE', 'toast.saved': 'ENREGISTRÉ', 'toast.failed': '✗ ÉCHEC',
     'toast.cancelled': 'ANNULÉ', 'toast.undo': 'ANNULER', 'toast.undone': 'ANNULÉ',
     'toast.trash': 'déplacé dans la corbeille', 'toast.details': 'DÉTAILS', 'error.title': 'ÉCHEC', 'error.close': 'FERMER',
-    'watch.title': 'DOSSIERS SURVEILLÉS', 'watch.help': 'Chaque nouveau fichier déposé dans le dossier passe par l’opération choisie ; les résultats vont dans le sous-dossier indiqué.', 'watch.add': 'AJOUTER UN DOSSIER', 'watch.remove': 'RETIRER', 'watch.out': 'Sous-dossier des résultats', 'watch.on': 'Actif', 'toast.install': 'INSTALLER LE COMPOSANT',
+    'watch.title': 'DOSSIERS SURVEILLÉS', 'watch.help': 'Chaque nouveau fichier déposé dans le dossier passe par l’opération choisie ; les résultats vont dans le sous-dossier indiqué.', 'watch.add': 'AJOUTER UN DOSSIER', 'watch.remove': 'RETIRER', 'watch.out': 'Sous-dossier des résultats', 'watch.on': 'Actif', 'watch.op': 'Opération', 'toast.install': 'INSTALLER LE COMPOSANT',
     'dock.drop': 'DÉPOSER', 'dock.files': 'FICHIERS ICI',
     'about.title': 'À PROPOS',
     'settings.title': 'RÉGLAGES', 'settings.keys': 'TOUCHES DE DÉCLENCHEMENT',
