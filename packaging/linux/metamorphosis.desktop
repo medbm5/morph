@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=Metamorphosis
+GenericName=File converter
+GenericName[fr]=Convertisseur de fichiers
+Comment=Drag a file, tap a key, drop it on the ring
+Comment[fr]=Glissez un fichier, touchez une touche, déposez-le sur l’anneau
+Exec=metamorphosis %F
+Icon={APP_ID}
+Terminal=false
+Categories=Utility;Graphics;AudioVideo;
+Keywords=convert;image;pdf;video;audio;compress;crop;
+StartupWMClass=metamorphosis

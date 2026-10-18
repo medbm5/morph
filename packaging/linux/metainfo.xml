@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>{APP_ID}</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT OR Apache-2.0</project_license>
+  <name>Metamorphosis</name>
+  <summary>Convert and edit files from a ring under your cursor</summary>
+  <summary xml:lang="fr">Convertir et retoucher des fichiers depuis un anneau sous le curseur</summary>
+  <developer id="io.github.{OWNER}">
+    <name>{OWNER}</name>
+  </developer>
+  <description>
+    <p>Drag a file, tap a key, and drop it on the holographic ring that opens under your cursor.
+    Metamorphosis converts images, PDFs, video, audio, documents and archives, and offers tools
+    such as crop, compress, redact, remove background and merge.</p>
+    <p>Everything runs offline. The original file is never modified: results are saved next to it.</p>
+    <p>On Wayland, a drop dock at the screen edge opens the ring when files are dragged onto it.</p>
+  </description>
+  <launchable type="desktop-id">{APP_ID}.desktop</launchable>
+  <url type="homepage">https://{OWNER}.github.io/morph/</url>
+  <url type="bugtracker">https://github.com/{OWNER}/morph/issues</url>
+  <url type="vcs-browser">https://github.com/{OWNER}/morph</url>
+  <screenshots>
+    <screenshot type="default">
+      <caption>The ring over a dragged image</caption>
+      <image>https://{OWNER}.github.io/morph/assets/ring.png</image>
+    </screenshot>
+  </screenshots>
+  <content_rating type="oars-1.1"/>
+  <branding>
+    <color type="primary" scheme_preference="dark">#0A1A24</color>
+  </branding>
+  <releases>
+    <release version="{VERSION}" date="{DATE}"/>
+  </releases>
+</component>

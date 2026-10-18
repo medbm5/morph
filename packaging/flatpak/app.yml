@@ -1,0 +1,42 @@
+# Flathub manifest. Repackages the release .deb (built and tested by CI). Rendered
+# to {APP_ID}.yml, next to metainfo.xml and metamorphosis.desktop, by
+# scripts/render_packaging.py.
+id: {APP_ID}
+runtime: org.gnome.Platform
+runtime-version: '48'
+sdk: org.gnome.Sdk
+command: metamorphosis
+finish-args:
+  - --share=ipc
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=dri
+  # Outputs are written next to the originals, wherever the user keeps them.
+  - --filesystem=home
+  - --filesystem=xdg-run/gvfs
+  # Tray icon.
+  - --talk-name=org.kde.StatusNotifierWatcher
+  # No --share=network: Metamorphosis works offline. Optional components (AI
+  # models, FFmpeg, pandoc) are downloaded only from the Components page, which
+  # says so when the sandbox has no network.
+modules:
+  - name: metamorphosis
+    buildsystem: simple
+    sources:
+      - type: file
+        url: https://github.com/{OWNER}/morph/releases/download/v{VERSION}/Metamorphosis_{VERSION}_amd64.deb
+        sha256: {SHA256_DEB}
+        dest-filename: metamorphosis.deb
+        only-arches: [x86_64]
+      - type: file
+        path: metainfo.xml
+      - type: file
+        path: metamorphosis.desktop
+    build-commands:
+      - ar -x metamorphosis.deb
+      - tar -xf data.tar.gz
+      - install -Dm755 usr/bin/metamorphosis /app/bin/metamorphosis
+      - if [ -d usr/lib/Metamorphosis ]; then cp -r usr/lib/Metamorphosis /app/lib/; fi
+      - install -Dm644 metamorphosis.desktop /app/share/applications/{APP_ID}.desktop
+      - install -Dm644 metainfo.xml /app/share/metainfo/{APP_ID}.metainfo.xml
+      - install -Dm644 usr/share/icons/hicolor/128x128/apps/metamorphosis.png /app/share/icons/hicolor/128x128/apps/{APP_ID}.png
