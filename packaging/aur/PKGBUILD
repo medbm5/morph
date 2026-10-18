@@ -1,0 +1,27 @@
+# Maintainer: {OWNER}
+pkgname=morph-bin
+pkgver={VERSION}
+pkgrel=1
+pkgdesc="Drag a file, tap a key, drop it on the ring to convert or edit it. Offline."
+arch=('x86_64')
+url="https://github.com/{OWNER}/morph"
+license=('MIT' 'Apache-2.0')
+depends=('webkit2gtk-4.1' 'gtk3' 'libayatana-appindicator' 'libxi' 'libxext')
+optdepends=('gtk-layer-shell: pin the drop dock above windows on Wayland (KDE, wlroots)'
+            'xdg-desktop-portal: global shortcut for the drop dock on Wayland'
+            'libreoffice-fresh: Office to PDF and slide conversions')
+provides=('morph' 'metamorphosis')
+conflicts=('morph' 'metamorphosis')
+source_x86_64=("https://github.com/{OWNER}/morph/releases/download/v${pkgver}/Metamorphosis_${pkgver}_amd64.deb"
+               "https://github.com/{OWNER}/morph/releases/download/v${pkgver}/morph-linux-x86_64.zip")
+noextract=('morph-linux-x86_64.zip')
+sha256sums_x86_64=('{SHA256_DEB}'
+                   '{SHA256_CLI}')
+
+package() {
+  bsdtar -xf data.tar.gz -C "$pkgdir"
+  install -d "$pkgdir/usr/lib/morph-cli" "$pkgdir/usr/bin"
+  bsdtar -xf morph-linux-x86_64.zip -C "$pkgdir/usr/lib/morph-cli"
+  chmod 755 "$pkgdir/usr/lib/morph-cli/morph"
+  ln -s /usr/lib/morph-cli/morph "$pkgdir/usr/bin/morph"
+}
