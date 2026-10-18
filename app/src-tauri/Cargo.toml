@@ -1,0 +1,23 @@
+[package]
+name = "metamorphosis"
+description = "Metamorphosis — drag, tap a key, drop on the ring"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+
+[lib]
+name = "metamorphosis_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+morph-core.workspace = true
+tauri = { version = "2", features = ["tray-icon", "image-png"] }
+serde.workspace = true
+serde_json.workspace = true
+anyhow.workspace = true
