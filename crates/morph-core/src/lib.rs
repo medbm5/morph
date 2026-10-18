@@ -3,6 +3,7 @@
 //!
 //! Engines implement [`Operation`]; the app and the `morph` CLI share one
 //! [`Registry`], so anything the ring can do, the CLI can do.
+pub mod components;
 pub mod kind;
 pub mod op;
 pub mod output;
