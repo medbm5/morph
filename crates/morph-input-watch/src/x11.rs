@@ -32,7 +32,7 @@ pub fn start(machine: Arc<Mutex<Machine>>, sink: Sink) -> Result<Box<dyn FnOnce(
         root,
         &[xinput::EventMask {
             deviceid: xinput::Device::ALL_MASTER.into(),
-            mask: vec![mask.into()],
+            mask: vec![mask],
         }],
     )?
     .check()

@@ -14,7 +14,22 @@ use std::path::Path;
 pub fn available() -> bool {
     #[cfg(windows)]
     {
-        true
+        // WIC only decodes HEIF/AVIF when the codec extensions are installed (they
+        // aren't on Windows Server or some N editions): decode a tiny AVIF once to know.
+        static PROBE: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+        *PROBE.get_or_init(|| {
+            let Ok(dir) = tempfile_dir() else { return false };
+            let probe = dir.join("probe.avif");
+            let ok = image::RgbImage::from_pixel(8, 8, image::Rgb([200, 120, 40]))
+                .save(&probe)
+                .is_ok()
+                && wic::decode(&probe).is_ok();
+            let _ = std::fs::remove_dir_all(&dir);
+            if !ok {
+                log::info!("WIC can't decode HEIF/AVIF here (codec extensions missing)");
+            }
+            ok
+        })
     }
     #[cfg(not(windows))]
     {
