@@ -191,7 +191,11 @@ pub fn run_op(
             let result = runner.run(&job, move |event| {
                 let _ = emitter.emit("job://event", JobPayload { job: id, event });
             });
-            if let Ok(report) = &result {
+            // Actions (Copy, Move, Share…) aren't undoable jobs: Undo must never trash originals.
+            let is_action = registry
+                .get(&job.op)
+                .is_some_and(|o| o.spec().ring == Ring::Actions);
+            if let (Ok(report), false) = (&result, is_action) {
                 if !report.outputs.is_empty() {
                     let label = registry
                         .get(&job.op)
@@ -469,7 +473,7 @@ pub fn history() -> Vec<morph_core::history::Entry> {
 
 /// Save the drag-chain that led to `job` as a recipe in the user's recipe folder.
 #[tauri::command]
-pub fn save_recipe(state: State<AppState>, job: u64, name: String) -> Result<String, String> {
+pub fn save_recipe(app: AppHandle, job: u64, name: String) -> Result<String, String> {
     use morph_core::recipe::{RecipeFile, StepFile};
     let steps = morph_core::history::History::default().chain(job);
     if steps.is_empty() {
@@ -494,17 +498,19 @@ pub fn save_recipe(state: State<AppState>, job: u64, name: String) -> Result<Str
     let slug = file.id().trim_start_matches("recipe.").to_string();
     let path = dir.join(format!("{slug}.toml"));
     std::fs::write(&path, file.to_toml()).map_err(|e| e.to_string())?;
-    reload_registry(&state);
+    reload_registry_for(&app);
     Ok(path.display().to_string())
 }
 
 /// Rebuild the registry (engines + recipes) after recipe changes.
-pub fn reload_registry(state: &AppState) {
-    let (reg, errors) = morph_engines::registry_with_recipes();
+pub fn reload_registry_for(app: &AppHandle) {
+    let (mut reg, errors) = morph_engines::registry_with_recipes();
     for (p, e) in errors {
         log::warn!("skipping recipe {}: {e}", p.display());
     }
-    *state.registry.write().unwrap() = Arc::new(reg);
+    morph_platform::actions::register(&mut reg, crate::actions::hooks(app));
+    log::info!("{} operations registered", reg.len());
+    *app.state::<AppState>().registry.write().unwrap() = Arc::new(reg);
 }
 
 #[tauri::command]

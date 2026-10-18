@@ -1,5 +1,6 @@
 //! Metamorphosis desktop shell: tray icon, windows and the HUD ring overlay.
 
+mod actions;
 mod commands;
 mod expanded;
 #[cfg(target_os = "linux")]
@@ -15,12 +16,9 @@ use tauri::{Manager, RunEvent, WindowEvent};
 pub fn run() {
     logger::init();
     log::info!("Metamorphosis {} starting", morph_core::VERSION);
-    let (registry, recipe_errors) = morph_engines::registry_with_recipes();
-    for (path, e) in recipe_errors {
-        log::warn!("skipping recipe {}: {e}", path.display());
-    }
     let app = tauri::Builder::default()
-        .manage(AppState::new(registry))
+        .manage(AppState::new(morph_core::Registry::new()))
+        .manage(actions::Shelf::default())
         .manage(expanded::Pending::default())
         .invoke_handler(tauri::generate_handler![
             commands::ring_items,
@@ -51,9 +49,15 @@ pub fn run() {
             commands::audio_loudness,
             commands::preview_op,
             commands::pdf_thumbs,
+            actions::float_items,
+            actions::float_add,
+            actions::float_remove,
+            actions::float_drag_out,
             expanded::expanded_request,
         ])
         .setup(|app| {
+            // The registry needs the app handle (actions use its windows).
+            commands::reload_registry_for(app.handle());
             tray::create(app.handle())?;
             overlay::create(app.handle())?;
             overlay::start_watcher(app.handle());
@@ -67,6 +71,19 @@ pub fn run() {
                     if let Err(e) = expanded::open(app.handle(), op, &files) {
                         log::error!("--open {op}: {e:#}");
                     }
+                }
+            } else if let Some(i) = args.iter().position(|a| a == "--ring") {
+                // `--ring <convert|tools|actions> <files…>`: file-manager menu entries.
+                let ring = args.get(i + 1).cloned().unwrap_or_else(|| "convert".into());
+                let files: Vec<std::path::PathBuf> = args[i + 2..].iter().map(Into::into).collect();
+                let req = expanded::Request {
+                    mode: "ring".into(),
+                    ring: Some(ring),
+                    paths: files,
+                    op: None,
+                };
+                if let Err(e) = expanded::show(app.handle(), req) {
+                    log::error!("--ring: {e:#}");
                 }
             } else if !args.iter().any(|a| a == "--background") {
                 show_window(app.handle(), "about");

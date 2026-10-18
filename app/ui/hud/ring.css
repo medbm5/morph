@@ -5,7 +5,7 @@
 .hud-svg { display: block; width: 100%; height: auto; overflow: visible; }
 
 /* ---------- Decorative layers ---------- */
-.hud-spin { transform-box: view-box; transform-origin: 50% 50%; }
+.hud-spin { transform-box: fill-box; transform-origin: center; }
 .hud-spin-slow { animation: hud-cw var(--hud-spin-slow) linear infinite; }
 .hud-spin-mid  { animation: hud-ccw var(--hud-spin-mid) linear infinite; }
 .hud-spin-fast { animation: hud-cw var(--hud-spin-fast) linear infinite; }
@@ -59,16 +59,16 @@
 @keyframes hud-fade { from { opacity: 0; } to { opacity: 1; } }
 
 /* ---------- Ring switch: old segments 0.9 + fade (100 ms), new ones draw in (160 ms) ---------- */
-.hud-segs { transform-box: view-box; transform-origin: 50% 50%; }
+.hud-segs { transform-box: fill-box; transform-origin: center; }
 .hud-switch-out .hud-segs { animation: hud-switch-out var(--hud-switch-out) ease-in both; }
 .hud-switch-in .hud-segs .hud-draw { stroke-dasharray: 1; animation: hud-draw var(--hud-switch-in) ease-out both; }
 .hud-switch-in .hud-segs .hud-label, .hud-switch-in .hud-segs .hud-num { animation: hud-fade var(--hud-switch-in) ease-out both; }
 @keyframes hud-switch-out { to { transform: scale(0.9); opacity: 0; } }
 
 /* ---------- Drop: collapse to a 6 px dot (180 ms ease-in), then one accent pulse (400 ms) ---------- */
-.hud-body { transform-box: view-box; transform-origin: 50% 50%; transition: transform var(--hud-collapse) ease-in, opacity var(--hud-collapse) ease-in; }
+.hud-body { transform-box: fill-box; transform-origin: center; transition: transform var(--hud-collapse) ease-in, opacity var(--hud-collapse) ease-in; }
 .hud-collapsed .hud-body { transform: scale(0.02); opacity: 0; }
-.hud-pulse { fill: none; stroke: var(--hud-accent); stroke-width: 2; opacity: 0; transform-box: view-box; transform-origin: 50% 50%; }
+.hud-pulse { fill: none; stroke: var(--hud-accent); stroke-width: 2; opacity: 0; transform-box: fill-box; transform-origin: center; }
 .hud-collapsed .hud-pulse { animation: hud-pulse var(--hud-pulse) ease-out var(--hud-collapse) both; }
 @keyframes hud-pulse { from { opacity: 1; transform: scale(0.05); } to { opacity: 0; transform: scale(1); } }
 .hud-dot { fill: var(--hud-accent); opacity: 0; }

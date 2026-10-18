@@ -15,6 +15,7 @@
     const version = await T.app.getVersion();
     if (req.mode === 'components') { window.MorphComponents.show(root, version, req.op); return; }
     if (req.mode === 'history') { window.MorphHistory.show(root, version); return; }
+    if (req.mode === 'ring') { showRing(req, version); return; }
     const panel = createHudPanel(root, { version, footer: false, title: 'OPERATION', wide: true });
     if (req.mode !== 'editor') return;
 
@@ -71,6 +72,63 @@
         }
       });
     }
+  }
+
+  /** The ring in a window (file-manager entries, clipboard images, keyboard use). */
+  async function showRing(req, version) {
+    const panel = createHudPanel(root, { version, footer: false });
+    const info = await invoke('describe', { paths: req.paths });
+    const isImage = /IMAGE/.test(info.type);
+    panel.setTarget({ name: info.name, type: info.type, size: info.size, dim: info.dim,
+      thumb: isImage && req.paths.length === 1 ? T.core.convertFileSrc(req.paths[0]) : false });
+    const tabs = h('div', { class: 'hud-row', role: 'tablist', style: 'margin-bottom:10px' });
+    const mount = h('div');
+    panel.centre.append(h('div', { style: 'width:min(600px,100%)' }, tabs, mount));
+    let kind = req.ring || 'convert';
+    let items = [];
+    const ring = createHudRing(mount, {
+      items: [], ringName: '', label: 'Operations',
+      onHover: (it, i) => { panel.setHot(i); panel.setOutput(it && it.out ? it.out : ''); },
+      onSelect: (it) => pick(it),
+    });
+    async function load() {
+      tabs.querySelectorAll('.hud-chip').forEach((b) => b.classList.toggle('on', b.dataset.k === kind));
+      const r = await invoke('ring_items', { paths: req.paths, ring: kind });
+      items = r.items;
+      ring.setItems(items, { ringName: kind.toUpperCase(), file: { size: r.file.size, type: r.file.type }, animate: 'switch' });
+      panel.setActions(items, { onPick: (it) => pick(it), onHover: (it, i) => ring.setHot(i) });
+      ring.focus();
+    }
+    ['convert', 'tools', 'actions'].forEach((k, i) => {
+      const b = h('button', { class: 'hud-chip', type: 'button', role: 'tab', text: `${['SHIFT', 'CTRL', 'ALT'][i]} · ${k.toUpperCase()}` });
+      b.dataset.k = k;
+      b.addEventListener('click', () => { kind = k; load(); });
+      tabs.append(b);
+    });
+    async function pick(it) {
+      if (it.disabled) { invoke('open_components', { focus: it.component || null }); return; }
+      if (it.editor) { show({ mode: 'editor', op: it.id, paths: req.paths }); return; }
+      panel.setStatus('WORKING…');
+      const id = await invoke('run_op', { op: it.id, paths: req.paths });
+      const saved = [];
+      const un = await T.event.listen('job://event', ({ payload: e }) => {
+        if (e.job !== id) return;
+        if (e.event === 'progress') panel.setStatus(`WORKING · ${Math.round(e.fraction * 100)} %`);
+        if (e.event === 'saved') saved.push(e.path);
+        if (e.event === 'failed') panel.setStatus(`✗ ${e.error}`, 'error');
+        if (e.event === 'finished') {
+          un();
+          if (saved.length) { panel.setStatus(`✓ SAVED · ${saved.map(base).join(', ')}`); ring.saved(base(saved[0])); }
+          else if (!e.failed) { panel.setStatus('✓ DONE'); ring.saved(it.label, { verb: 'DONE' }); }
+        }
+      });
+    }
+    // Keys: Shift/Ctrl/Alt switch rings; 1–7, arrows and Enter work on the focused ring.
+    window.addEventListener('keydown', (e) => {
+      const k = { Shift: 'convert', Control: 'tools', Alt: 'actions' }[e.key];
+      if (k && k !== kind) { e.preventDefault(); kind = k; load(); }
+    });
+    await load();
   }
 
   function genericForm(ctx) {

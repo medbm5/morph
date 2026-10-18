@@ -8,12 +8,23 @@ pub fn create(app: &AppHandle) -> tauri::Result<()> {
     let undo = MenuItem::with_id(app, "undo", "Undo last job", true, None::<&str>)?;
     let history = MenuItem::with_id(app, "history", "History…", true, None::<&str>)?;
     let components = MenuItem::with_id(app, "components", "Components…", true, None::<&str>)?;
+    let clip = MenuItem::with_id(
+        app,
+        "clipboard",
+        "Image from clipboard…",
+        true,
+        None::<&str>,
+    )?;
+    let float = MenuItem::with_id(app, "float", "Float shelf", true, None::<&str>)?;
     let about = MenuItem::with_id(app, "about", "About Metamorphosis", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
     let sep = || PredefinedMenuItem::separator(app);
     let menu = Menu::with_items(
         app,
         &[
+            &clip,
+            &float,
+            &sep()?,
             &undo,
             &history,
             &components,
@@ -38,6 +49,14 @@ pub fn create(app: &AppHandle) -> tauri::Result<()> {
             },
             "history" => {
                 let _ = crate::commands::open_history(app.clone());
+            }
+            "clipboard" => {
+                if let Err(e) = crate::actions::clipboard_image(app) {
+                    log::warn!("clipboard image: {e:#}");
+                }
+            }
+            "float" => {
+                let _ = crate::actions::add_to_shelf(app, &[]);
             }
             "components" => {
                 let _ = crate::commands::open_components(app.clone(), None);

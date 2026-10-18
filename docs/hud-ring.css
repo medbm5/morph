@@ -15,7 +15,7 @@
 .hud-svg { display: block; width: 100%; height: auto; overflow: visible; }
 
 /* Decorative layers */
-.hud-spin { transform-box: view-box; transform-origin: 50% 50%; }
+.hud-spin { transform-box: fill-box; transform-origin: center; }
 .hud-spin-slow { animation: hud-cw 40s linear infinite; }
 .hud-spin-mid  { animation: hud-ccw 22s linear infinite; }
 .hud-spin-fast { animation: hud-cw 9s linear infinite; }
@@ -59,9 +59,9 @@
 @keyframes hud-fade { from { opacity: 0; } to { opacity: 1; } }
 
 /* Drop: collapse into a dot, then pulse */
-.hud-body { transform-box: view-box; transform-origin: 50% 50%; transition: transform 180ms ease-in, opacity 180ms ease-in; }
+.hud-body { transform-box: fill-box; transform-origin: center; transition: transform 180ms ease-in, opacity 180ms ease-in; }
 .hud-collapsed .hud-body { transform: scale(0.02); opacity: 0; }
-.hud-pulse { fill: none; stroke: var(--hud-accent); stroke-width: 2; opacity: 0; transform-box: view-box; transform-origin: 50% 50%; }
+.hud-pulse { fill: none; stroke: var(--hud-accent); stroke-width: 2; opacity: 0; transform-box: fill-box; transform-origin: center; }
 .hud-collapsed .hud-pulse { animation: hud-pulse 400ms ease-out 180ms both; }
 @keyframes hud-pulse { from { opacity: 1; transform: scale(0.05); } to { opacity: 0; transform: scale(1); } }
 .hud-dot { fill: var(--hud-accent); opacity: 0; }

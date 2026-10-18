@@ -95,6 +95,21 @@ pub fn sanitize(name: &str) -> String {
     }
 }
 
+/// Local-agnostic UTC stamp for file names: `2026-10-18 17-05-09`.
+pub fn timestamp() -> String {
+    let secs = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    format!(
+        "{} {:02}-{:02}-{:02}",
+        today(),
+        secs / 3600 % 24,
+        secs / 60 % 60,
+        secs % 60
+    )
+}
+
 fn today() -> String {
     // Days since the epoch → civil date (Howard Hinnant's algorithm); avoids a chrono dependency.
     let secs = std::time::SystemTime::now()
