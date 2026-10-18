@@ -336,6 +336,60 @@ impl OpContext<'_> {
 }
 
 /// An operation an engine provides.
+///
+/// Implement it, describe the operation with an [`OpSpec`], and register it: the
+/// ring, the expanded-mode form, the CLI (`morph tool <name> --<param>`), chains,
+/// recipes and watch folders all pick it up from the spec. Write outputs only
+/// through [`OpContext::sink`]: it picks collision-free names, writes atomically
+/// and never touches the input.
+///
+/// ```
+/// use morph_core::{Job, OpContext, OpSpec, Operation, OutputKind, ParamKind, ParamSpec, Registry, Runner};
+/// use std::io::Write;
+///
+/// /// Upper-cases text files: `notes.txt` → `notes Shouted.txt`.
+/// struct Shout {
+///     spec: OpSpec,
+/// }
+///
+/// impl Shout {
+///     fn new() -> Self {
+///         let spec = OpSpec::tool("text.shout", "Shout", "Shouted", &["ext:txt"], OutputKind::SameAsInput)
+///             .param(ParamSpec::new("bang", "Exclamation marks", ParamKind::Int { min: 0, max: 5 }, 1.into()));
+///         Self { spec }
+///     }
+/// }
+///
+/// impl Operation for Shout {
+///     fn spec(&self) -> &OpSpec {
+///         &self.spec
+///     }
+///
+///     fn run(&self, ctx: &OpContext) -> anyhow::Result<Vec<std::path::PathBuf>> {
+///         let text = std::fs::read_to_string(ctx.input())?;
+///         let bang = "!".repeat(ctx.params.i64("bang").unwrap_or(1) as usize);
+///         ctx.progress.message(0.5, "shouting");
+///         // A pending file in the output folder; dropped without commit → removed.
+///         let out = ctx.sink.file(ctx.input(), &ctx.kind().ext)?;
+///         std::fs::File::create(out.path())?.write_all(format!("{}{bang}", text.to_uppercase()).as_bytes())?;
+///         Ok(vec![out.commit()?])
+///     }
+/// }
+///
+/// let mut registry = Registry::new();
+/// registry.register(Shout::new());
+///
+/// let dir = std::env::temp_dir().join(format!("morph-doc-{}", std::process::id()));
+/// std::fs::create_dir_all(&dir)?;
+/// let input = dir.join("notes.txt");
+/// std::fs::write(&input, "hello")?;
+/// let report = Runner::new(&registry).run(&Job::new("text.shout", vec![input.clone()]), |_| {})?;
+/// assert_eq!(std::fs::read_to_string(&report.outputs[0])?, "HELLO!");
+/// assert_eq!(report.outputs[0], dir.join("notes Shouted.txt"));
+/// assert_eq!(std::fs::read_to_string(&input)?, "hello"); // the original is untouched
+/// # std::fs::remove_dir_all(&dir)?;
+/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// ```
 pub trait Operation: Send + Sync {
     fn spec(&self) -> &OpSpec;
 

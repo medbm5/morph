@@ -13,3 +13,7 @@ ring    = "tools"                 # convert | tools | actions
 accepts = ["image/*"]             # optional; defaults to what the first step accepts
 steps   = ["convert:jpg", "crop:1:1", "bg:preset=soft"]
 ```
+
+A recipe can also wrap any local command (`run = ["magick", "{input}", …, "{output}"]`),
+with parameters shown as a form. The command may only write its `{output}`. See
+[EXTENDING.md](../EXTENDING.md#command-recipes).

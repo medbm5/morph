@@ -98,3 +98,32 @@ fn output_templates_cannot_be_paths() {
         assert!(CommandOp::new(&r).is_err(), "{bad} accepted");
     }
 }
+
+#[test]
+fn documented_example_parses_with_params() {
+    let r = RecipeFile::parse(
+        r#"
+name    = "Thumbnail"
+ring    = "tools"
+accepts = ["image/*"]
+output  = "{stem} Thumb.webp"
+run     = ["magick", "{input}", "-thumbnail", "{size}x{size}", "{output}"]
+
+[[param]]
+key     = "size"
+label   = "Size"
+type    = "int"
+min     = 16
+max     = 4096
+default = 512
+"#,
+    )
+    .unwrap();
+    let op = CommandOp::new(&r).unwrap();
+    use morph_core::Operation;
+    let spec = op.spec();
+    assert_eq!(spec.id, "recipe.thumbnail");
+    assert_eq!(spec.params[0].key, "size");
+    assert_eq!(spec.params[0].default, serde_json::json!(512));
+    assert!(matches!(&spec.output, morph_core::OutputKind::Ext(e) if e == "webp"));
+}
