@@ -1,0 +1,78 @@
+/* Metamorphosis HUD — expanded mode (editors, settings, file-manager entry). */
+
+.hud-frame {
+  position: relative; box-sizing: border-box; min-height: 100vh; padding: 40px 48px;
+  display: grid; grid-template-columns: 250px minmax(0, 1fr) 250px; grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 24px 32px;
+}
+.hud-frame.is-wide { grid-template-columns: 220px minmax(0, 1fr) 280px; }
+.hud-corner { position: absolute; width: 40px; height: 40px; border: 0 solid var(--hud-line); pointer-events: none; }
+.hud-corner.tl { left: 24px; top: 24px; border-left-width: 2px; border-top-width: 2px; }
+.hud-corner.tr { right: 24px; top: 24px; border-right-width: 2px; border-top-width: 2px; }
+.hud-corner.bl { left: 24px; bottom: 24px; border-left-width: 2px; border-bottom-width: 2px; }
+.hud-corner.br { right: 24px; bottom: 24px; border-right-width: 2px; border-bottom-width: 2px; }
+
+.hud-header { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; }
+.hud-header .hud-spacer { flex: 1; }
+.hud-blink { width: 8px; height: 8px; border-radius: 50%; background: var(--hud-accent); animation: hud-blink 1.6s ease-in-out infinite; }
+@keyframes hud-blink { 50% { opacity: .35; } }
+.hud-brand { font-weight: 700; letter-spacing: 4px; font-size: 14px; color: var(--hud-line); }
+.hud-mono { font-family: var(--font-readout); font-size: 11px; color: var(--hud-muted); }
+
+.hud-panel h2 {
+  margin: 0 0 12px; font-size: 12px; font-weight: 600; letter-spacing: 3px; color: var(--hud-line);
+  border-bottom: 1px solid var(--hud-line-35); padding-bottom: 8px;
+}
+.hud-thumb {
+  width: 120px; height: 160px; border: 1px solid color-mix(in srgb, var(--hud-line) 60%, transparent);
+  background: var(--hud-line-7) center / contain no-repeat; margin-bottom: 14px;
+}
+.hud-dl { display: grid; grid-template-columns: 70px minmax(0, 1fr); row-gap: 8px; margin: 0; font-family: var(--font-readout); font-size: 12px; }
+.hud-dl dt { color: var(--hud-muted); }
+.hud-dl dd { margin: 0; overflow-wrap: anywhere; }
+.hud-armed { color: var(--hud-accent); }
+.hud-danger { color: var(--hud-danger); }
+
+.hud-centre { display: grid; place-items: center; min-width: 0; min-height: 0; }
+.hud-centre > .hud { width: min(600px, 100%); }
+
+.hud-list { display: flex; flex-direction: column; gap: 10px; }
+.hud-btn, .hud-list button {
+  display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 14px; text-align: left; cursor: pointer;
+  font: 600 13px var(--font-label); letter-spacing: 2px; text-transform: uppercase;
+  background: color-mix(in srgb, var(--hud-line) 4%, transparent); border: 1px solid var(--hud-line-35); color: var(--hud-text);
+}
+.hud-list button .hud-mono { opacity: .8; }
+.hud-list button.on, .hud-btn.primary { border-color: var(--hud-accent); background: color-mix(in srgb, var(--hud-accent) 18%, transparent); color: #fff; }
+.hud-list button:disabled, .hud-btn:disabled { opacity: .45; cursor: default; }
+.hud-list button:focus-visible, .hud-btn:focus-visible { outline: 2px solid var(--hud-accent); outline-offset: 2px; }
+.hud-btn.small { min-height: 30px; padding: 0 10px; font-size: 11px; }
+
+.hud-out { display: flex; flex-direction: column; gap: 6px; margin-top: 32px; font-family: var(--font-readout); font-size: 11px; color: var(--hud-muted); }
+.hud-out .hud-out-name { color: var(--hud-text); overflow-wrap: anywhere; }
+
+.hud-footer { grid-column: 1 / -1; display: flex; justify-content: center; align-items: center; gap: 10px; font-size: 12px; letter-spacing: 2px; color: var(--hud-muted); }
+.hud-key { border: 1px solid var(--hud-line); color: var(--hud-line); padding: 4px 10px; font-weight: 600; }
+
+/* Form controls used by editors and settings */
+.hud-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; font-family: var(--font-readout); font-size: 11px; color: var(--hud-muted); letter-spacing: 1px; text-transform: uppercase; }
+.hud-field input[type="text"], .hud-field input[type="number"], .hud-field select, .hud-field textarea {
+  background: var(--hud-core); color: var(--hud-text); border: 1px solid var(--hud-line-35);
+  font: 400 13px var(--font-readout); padding: 7px 9px; text-transform: none; letter-spacing: 0;
+}
+.hud-field input:focus-visible, .hud-field select:focus-visible, .hud-field textarea:focus-visible { outline: 2px solid var(--hud-accent); outline-offset: 1px; }
+.hud-field input[type="range"] { accent-color: var(--hud-accent); }
+.hud-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.hud-chip { font: 500 11px var(--font-readout); padding: 5px 9px; border: 1px solid var(--hud-line-35); background: none; color: var(--hud-text); cursor: pointer; }
+.hud-chip.on { border-color: var(--hud-accent); color: var(--hud-accent); }
+.hud-swatch { width: 22px; height: 22px; border-radius: 50%; border: 2px solid rgba(189, 244, 255, .35); cursor: pointer; padding: 0; }
+.hud-swatch.on { border-color: #fff; }
+.hud-warn { color: var(--hud-danger); font-family: var(--font-readout); font-size: 11px; }
+
+@media (max-width: 1000px) { .hud-frame, .hud-frame.is-wide { grid-template-columns: 1fr; padding: 32px 20px; } }
+@media (prefers-reduced-motion: reduce) { .hud-blink { animation: none; } }
+.hud-reduced .hud-blink { animation: none; }
+@media (forced-colors: active) {
+  .hud-corner, .hud-list button, .hud-btn { border-color: CanvasText; }
+  .hud-list button.on, .hud-btn.primary { border-color: Highlight; }
+}
