@@ -75,20 +75,7 @@ fn decode_with_sidecar(path: &Path) -> Result<DynamicImage> {
 }
 
 fn tempfile_dir() -> Result<std::path::PathBuf> {
-    let d = std::env::temp_dir().join(format!(
-        "morph-heif-{}-{}",
-        std::process::id(),
-        rand_suffix()
-    ));
-    std::fs::create_dir_all(&d)?;
-    Ok(d)
-}
-
-fn rand_suffix() -> u128 {
-    std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_nanos())
-        .unwrap_or(0)
+    Ok(morph_core::output::private_tempdir("morph-heif")?)
 }
 
 #[cfg(windows)]

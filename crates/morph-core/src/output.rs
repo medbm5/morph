@@ -25,6 +25,24 @@ fn temp_name(dir: &Path, hint: &str) -> PathBuf {
     dir.join(format!(".{hint}.morph-{pid}-{nanos:x}-{n}.tmp"))
 }
 
+/// A new, private folder in the system temp folder (`<prefix>-<pid>-<n>`).
+/// Created exclusively, so concurrent jobs never share one.
+pub fn private_tempdir(prefix: &str) -> io::Result<PathBuf> {
+    static NEXT: AtomicU64 = AtomicU64::new(0);
+    loop {
+        let d = std::env::temp_dir().join(format!(
+            "{prefix}-{}-{}",
+            std::process::id(),
+            NEXT.fetch_add(1, Ordering::Relaxed)
+        ));
+        match fs::create_dir(&d) {
+            Ok(()) => return Ok(d),
+            Err(e) if e.kind() == io::ErrorKind::AlreadyExists => continue,
+            Err(e) => return Err(e),
+        }
+    }
+}
+
 /// Allocates output names and commits files atomically for one operation.
 #[derive(Debug)]
 pub struct OutputSink {

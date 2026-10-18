@@ -258,16 +258,7 @@ fn url_from_path(p: &Path) -> String {
 }
 
 fn scratch() -> Result<PathBuf> {
-    let d = std::env::temp_dir().join(format!(
-        "morph-office-{}-{}",
-        std::process::id(),
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_nanos())
-            .unwrap_or(0)
-    ));
-    std::fs::create_dir_all(&d)?;
-    Ok(d)
+    Ok(morph_core::output::private_tempdir("morph-office")?)
 }
 
 enum OfficeKind {

@@ -206,16 +206,7 @@ fn final_folder(input: &Path, naming: &crate::Naming) -> std::io::Result<PathBuf
 }
 
 fn tempdir() -> std::io::Result<PathBuf> {
-    let d = std::env::temp_dir().join(format!(
-        "morph-chain-{}-{}",
-        std::process::id(),
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_nanos())
-            .unwrap_or(0)
-    ));
-    std::fs::create_dir_all(&d)?;
-    Ok(d)
+    crate::output::private_tempdir("morph-chain")
 }
 
 #[cfg(test)]
