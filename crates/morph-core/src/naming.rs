@@ -15,6 +15,21 @@ pub struct Naming {
     pub tool: String,
     /// How a collision number is attached: `{name} {n}` → `photo 2`.
     pub collision: String,
+    /// What to do when the output name is taken. Never replaces a file.
+    pub conflict: Conflict,
+}
+
+/// Conflict policy for output names.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Conflict {
+    /// Keep both: `photo 2.png`.
+    #[default]
+    Number,
+    /// Keep both, stamping the new one: `photo 2026-10-18 17-05-09.png`.
+    Timestamp,
+    /// Leave the existing file alone and don't save the new one.
+    Skip,
 }
 
 impl Default for Naming {
@@ -23,6 +38,7 @@ impl Default for Naming {
             convert: "{stem}.{ext}".into(),
             tool: "{stem} {op}.{ext}".into(),
             collision: "{name} {n}".into(),
+            conflict: Conflict::Number,
         }
     }
 }
@@ -56,10 +72,15 @@ impl Naming {
             return name.to_string();
         }
         let (base, ext) = split_ext(name);
-        let numbered = self
-            .collision
-            .replace("{name}", base)
-            .replace("{n}", &n.to_string());
+        let numbered = match self.conflict {
+            // A second collision within the same second still gets a number.
+            Conflict::Timestamp if n == 2 => format!("{base} {}", timestamp()),
+            Conflict::Timestamp => format!("{base} {} {}", timestamp(), n - 1),
+            _ => self
+                .collision
+                .replace("{name}", base)
+                .replace("{n}", &n.to_string()),
+        };
         match ext {
             Some(e) => format!("{numbered}.{e}"),
             None => numbered,
@@ -161,6 +182,11 @@ mod tests {
 
     #[test]
     fn custom_template_and_sanitize() {
+        let t = Naming {
+            conflict: Conflict::Timestamp,
+            ..Naming::default()
+        };
+        assert!(t.numbered("photo.png", 2).starts_with("photo 20"));
         let n = Naming {
             tool: "{op} - {stem}.{ext}".into(),
             ..Naming::default()

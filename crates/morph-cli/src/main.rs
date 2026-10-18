@@ -151,7 +151,7 @@ fn run(cli: Cli, registry: &Registry) -> Result<bool> {
                 .iter()
                 .map(|s| morph_core::recipe::parse_step(s))
                 .collect::<Result<_>>()?;
-            let runner = Runner::new(registry);
+            let runner = Runner::new(registry).naming(morph_core::Settings::load().naming);
             let report = runner.run_chain(&steps, &files, |ev| match ev {
                 JobEvent::Saved { path } => println!("✓ SAVED · {}", path.display()),
                 JobEvent::Failed { error, .. } => eprintln!("✗ {error}"),
@@ -284,7 +284,7 @@ pub fn canonical_ext(s: &str) -> String {
 
 pub fn run_job(registry: &Registry, job: Job) -> Result<bool> {
     let fancy = std::io::stderr().is_terminal();
-    let runner = Runner::new(registry);
+    let runner = Runner::new(registry).naming(morph_core::Settings::load().naming);
     let report = runner.run(&job, move |ev| match ev {
         JobEvent::Saved { path } => println!("✓ SAVED · {}", path.display()),
         JobEvent::Failed { input, error } => match input {

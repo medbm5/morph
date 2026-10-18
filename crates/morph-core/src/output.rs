@@ -179,7 +179,12 @@ impl PendingDir<'_> {
 
     pub fn commit(mut self) -> io::Result<PathBuf> {
         let naming = self.sink.naming();
-        for n in 1..10_000 {
+        let last = if naming.conflict == crate::naming::Conflict::Skip {
+            1
+        } else {
+            9_999
+        };
+        for n in 1..=last {
             let cand = self.dir.join(naming.numbered(&self.name, n));
             if cand.symlink_metadata().is_ok() {
                 continue;
@@ -197,6 +202,9 @@ impl PendingDir<'_> {
                 Err(e) => return Err(e),
             }
         }
+        if last == 1 {
+            return Err(skipped(&self.name));
+        }
         Err(io::Error::other("no free output folder name"))
     }
 }
@@ -209,9 +217,21 @@ impl Drop for PendingDir<'_> {
     }
 }
 
+fn skipped(name: &str) -> io::Error {
+    io::Error::new(
+        io::ErrorKind::AlreadyExists,
+        format!("{name} already exists (skipped)"),
+    )
+}
+
 /// Commit `tmp` as `dir/name`, or `name 2`, `name 3`… without ever replacing a file.
 pub fn commit_file(tmp: &Path, dir: &Path, name: &str, naming: &Naming) -> io::Result<PathBuf> {
-    for n in 1..10_000 {
+    let last = if naming.conflict == crate::naming::Conflict::Skip {
+        1
+    } else {
+        9_999
+    };
+    for n in 1..=last {
         let cand = dir.join(naming.numbered(name, n));
         match fs::hard_link(tmp, &cand) {
             Ok(()) => {
@@ -230,6 +250,10 @@ pub fn commit_file(tmp: &Path, dir: &Path, name: &str, naming: &Naming) -> io::R
                 return Ok(cand);
             }
         }
+    }
+    if last == 1 {
+        let _ = fs::remove_file(tmp);
+        return Err(skipped(name));
     }
     Err(io::Error::other("no free output name"))
 }
@@ -259,6 +283,29 @@ mod tests {
         assert_eq!(fs::read(&out).unwrap(), b"new");
         assert_eq!(fs::read(&src).unwrap(), b"source");
         assert_eq!(sink.saved(), vec![out]);
+    }
+
+    #[test]
+    fn skip_policy_keeps_the_existing_file() {
+        let d = tempfile::tempdir().unwrap();
+        let src = d.path().join("photo.heic");
+        fs::write(&src, b"source").unwrap();
+        fs::write(d.path().join("photo.png"), b"existing").unwrap();
+        let naming = Naming {
+            conflict: crate::naming::Conflict::Skip,
+            ..Naming::default()
+        };
+        let sink = OutputSink::new(naming, None, None);
+        let f = sink.file(&src, "png").unwrap();
+        fs::write(f.path(), b"new").unwrap();
+        let err = f.commit().unwrap_err();
+        assert_eq!(err.kind(), io::ErrorKind::AlreadyExists);
+        assert_eq!(fs::read(d.path().join("photo.png")).unwrap(), b"existing");
+        assert_eq!(
+            fs::read_dir(d.path()).unwrap().count(),
+            2,
+            "temp file removed"
+        );
     }
 
     #[test]
