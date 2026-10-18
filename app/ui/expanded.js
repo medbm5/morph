@@ -49,7 +49,7 @@
     async function run(extra) {
       const p = Object.assign({}, params, extra || {});
       panel.setStatus('WORKING…');
-      const id = await invoke('run_op', { op: spec.id, paths: req.paths, params: p });
+      const id = await invoke('run_op', { op: spec.id, paths: ctx.paths, params: p });
       const saved = [];
       const errors = [];
       const un = await T.event.listen('job://event', ({ payload: e }) => {
