@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Metamorphosis — drag, tap a key, drop on the ring</title>
+  <meta name="description" content="Metamorphosis: free, open-source drag-to-convert for Windows and Linux. Drag a file, tap Shift, drop it on a holographic ring. Offline, non-destructive.">
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <!-- Replace with a 1200×630 PNG before launch -->
+  <!-- <meta property="og:image" content="https://YOUR-GITHUB-USER.github.io/morph/assets/og.png"> -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="hud-ring.css">
+  <link rel="stylesheet" href="styles.css">
+  <script>
+    // Apply saved theme before paint to avoid a flash.
+    try { const t = localStorage.getItem('morph-theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+    document.documentElement.classList.add('js');
+  </script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="wrap header-row">
+      <a class="brand" href="#top" aria-label="Metamorphosis home">
+        <svg viewBox="0 0 64 64" width="28" height="28" aria-hidden="true"><circle cx="32" cy="32" r="22" fill="none" stroke="currentColor" stroke-width="12" stroke-dasharray="19 4"/><circle cx="32" cy="32" r="8" class="brand-dot"/></svg>
+        Metamorphosis
+      </a>
+      <nav aria-label="Main">
+        <ul class="nav">
+          <li><a href="#features">Features</a></li>
+          <li><a href="#how">How it works</a></li>
+          <li><a href="#install">Install</a></li>
+          <li><a href="#wayland">Wayland</a></li>
+          <li><a href="#faq">FAQ</a></li>
+        </ul>
+      </nav>
+      <div class="header-actions">
+        <button class="theme-toggle" type="button" aria-label="Switch color theme" title="Switch color theme">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z" fill="currentColor"/></svg>
+        </button>
+        <a class="btn btn-quiet" href="https://github.com/YOUR-GITHUB-USER/morph">GitHub</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- HERO -->
+    <section class="hero" id="top">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <h1>Drag a file.<br>Tap a key.<br>Drop it on the ring.</h1>
+          <p class="lede">Metamorphosis converts and edits files from a holographic ring that opens under your cursor, mid-drag. For Windows and Linux. Free, open source, and completely offline — your original is never touched.</p>
+          <div class="cta-row">
+            <a class="btn btn-primary" href="#install">Install Metamorphosis</a>
+            <a class="btn btn-quiet" href="https://github.com/YOUR-GITHUB-USER/morph">View source</a>
+          </div>
+          <p class="fineprint">Windows 10 22H2+ and 11 · Linux X11 (full) and Wayland (drop dock)</p>
+        </div>
+
+        <figure class="demo" aria-labelledby="demo-caption">
+          <div class="hud-panel">
+            <div class="hud-head" aria-hidden="true"><span class="hud-blink"></span><span class="hud-brand">METAMORPHOSIS</span><span class="hud-ver">// STAND ACTIVE · v0.1</span></div>
+            <div class="hud-target">
+              <span>FILE</span><span>Page 001.jpg</span>
+              <span>SIZE</span><span>1.1 MB</span>
+              <span>STATE</span><span class="hud-armed">ARMED</span>
+            </div>
+            <div id="hud-demo" class="hud-demo"></div>
+            <div class="hud-readout" aria-live="polite">
+              <span class="hud-k">OUTPUT</span><span id="hud-output">→ Page 001.png</span>
+              <span class="hud-k">STATUS</span><span id="hud-status" class="hud-armed">AWAITING DROP</span>
+            </div>
+            <div class="keys" role="tablist" aria-label="Ring">
+              <button class="key" role="tab" aria-selected="true" data-ring="convert"><kbd>Shift</kbd> Convert</button>
+              <button class="key" role="tab" aria-selected="false" data-ring="tools"><kbd>Ctrl</kbd> Tools</button>
+              <button class="key" role="tab" aria-selected="false" data-ring="actions"><kbd>Alt</kbd> Actions</button>
+            </div>
+            <div class="swatches" role="group" aria-label="Accent colour">
+              <button class="swatch" type="button" data-accent="#FFB347" style="--sw:#FFB347" aria-pressed="true" aria-label="Amber accent"></button>
+              <button class="swatch" type="button" data-accent="#4FE3FF" style="--sw:#4FE3FF" aria-pressed="false" aria-label="Cyan accent"></button>
+              <button class="swatch" type="button" data-accent="#FF5EA8" style="--sw:#FF5EA8" aria-pressed="false" aria-label="Pink accent"></button>
+              <button class="swatch" type="button" data-accent="#9CFF6E" style="--sw:#9CFF6E" aria-pressed="false" aria-label="Lime accent"></button>
+            </div>
+          </div>
+          <figcaption id="demo-caption" class="demo-caption">Hover a segment, then click or press 1–7 to drop. Tap Shift, Ctrl or Alt to switch rings.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section class="section" id="features" aria-labelledby="features-h">
+      <div class="wrap">
+        <h2 id="features-h">Three rings, picked for the file you're holding</h2>
+        <p class="section-lede">The ring only shows what makes sense for the dragged file. A PDF gets document formats; a video gets trim and speed; a folder gets actions.</p>
+
+        <div class="rings">
+          <article class="ring-col ring-convert">
+            <h3><kbd>Shift</kbd> Convert</h3>
+            <dl class="formats">
+              <dt>Images</dt><dd>JPG, PNG, WebP, AVIF, TIFF, BMP, PDF · HEIC and SVG input</dd>
+              <dt>PDF</dt><dd>JPG and PNG at 300 DPI, DOCX, TXT, Markdown, EPUB, PPTX</dd>
+              <dt>Video</dt><dd>MP4, MOV, MKV, WebM, AVI, WMV, GIF, MP3</dd>
+              <dt>Audio</dt><dd>MP3, M4A, WAV, FLAC, OGG, Opus, AIFF, WMA</dd>
+              <dt>Documents</dt><dd>DOCX, Markdown, TXT, EPUB, HTML · RTF input</dd>
+              <dt>Slides and sheets</dt><dd>PPTX to PDF and images · XLSX, ODS, CSV, TSV, PDF</dd>
+              <dt>Subtitles</dt><dd>SRT, VTT, TXT</dd>
+              <dt>Archives</dt><dd>ZIP, TAR, GZIP · 7z and RAR input</dd>
+            </dl>
+          </article>
+
+          <article class="ring-col ring-tools">
+            <h3><kbd>Ctrl</kbd> Tools</h3>
+            <dl class="formats">
+              <dt>Any file</dt><dd>Compress to a target size, edit or strip metadata</dd>
+              <dt>Images</dt><dd>Edit, annotate, add background, crop, redact faces and text, collage</dd>
+              <dt>Video</dt><dd>Trim, crop, change speed, join, split, save frames, redact</dd>
+              <dt>Audio</dt><dd>Normalize, trim, bleep, mono/stereo, waveform video</dd>
+              <dt>PDF</dt><dd>Merge, reorder, rotate and delete pages, compress</dd>
+            </dl>
+          </article>
+
+          <article class="ring-col ring-actions">
+            <h3><kbd>Alt</kbd> Actions</h3>
+            <dl class="formats">
+              <dt>Share</dt><dd>Nearby Share on Windows, KDE Connect or LocalSend on Linux</dd>
+              <dt>Float</dt><dd>Park files on a shelf and drag them into another app later</dd>
+              <dt>Copy and move</dt><dd>Copy as files, move to a folder, copy paths</dd>
+              <dt>Terminal</dt><dd>Open the folder in your terminal</dd>
+            </dl>
+            <p class="col-note">Actions work on folders and mixed selections too.</p>
+          </article>
+        </div>
+
+        <h3 class="sub-h">Extras for power users</h3>
+        <ul class="extras">
+          <li><strong>Chain and save recipes.</strong> PDF → JPG → square crop → background, as one segment.</li>
+          <li><strong>Same features in the terminal.</strong> <code>morph convert --to png *.heic</code></li>
+          <li><strong>Add your own segments.</strong> A short TOML file wraps any local tool — ImageMagick, FFmpeg, pandoc.</li>
+          <li><strong>Right-click entries</strong> in Explorer, Dolphin, Nautilus, Nemo and Thunar.</li>
+          <li><strong>Undo the last job</strong> — outputs go to the Recycle Bin or Trash.</li>
+          <li><strong>GPU video encoding</strong> with NVENC, Quick Sync, AMF or VA-API.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section class="section section-alt" id="how" aria-labelledby="how-h">
+      <div class="wrap">
+        <h2 id="how-h">How it works</h2>
+        <ol class="steps">
+          <li>
+            <h3>Start dragging</h3>
+            <p>Pick up one file, several, or a folder in your file manager — as if you were moving it.</p>
+          </li>
+          <li>
+            <h3>Tap a key</h3>
+            <p>Tap <kbd>Shift</kbd>, <kbd>Ctrl</kbd> or <kbd>Alt</kbd>. You don't need to hold it. Tap another key to switch rings, or <kbd>Esc</kbd> to cancel.</p>
+          </li>
+          <li>
+            <h3>Drop on a segment</h3>
+            <p>Or press <kbd>1</kbd>–<kbd>7</kbd>. The ring collapses into a pulse and confirms “✓ SAVED”. Tools like Crop or Annotate open an editor first.</p>
+          </li>
+          <li>
+            <h3>Find it next to the original</h3>
+            <p><code>photo.jpg</code> stays as it was. The result is saved beside it as <code>photo.png</code> — tools add a word, like <code>photo Cropped.jpg</code>. Drag that one to keep going.</p>
+          </li>
+        </ol>
+
+        <div class="media-grid">
+          <figure>
+            <img src="assets/demo-convert.svg" width="960" height="600" alt="Converting a PDF to PNG by dropping it on the ring" loading="lazy">
+            <figcaption>Convert a PDF to images</figcaption>
+          </figure>
+          <figure>
+            <img src="assets/demo-tools.svg" width="960" height="600" alt="Adding a gradient background to a screenshot" loading="lazy">
+            <figcaption>Add a background to a screenshot</figcaption>
+          </figure>
+          <figure>
+            <img src="assets/demo-chain.svg" width="960" height="600" alt="Chaining PDF to JPG to crop to background" loading="lazy">
+            <figcaption>Chain steps into a recipe</figcaption>
+          </figure>
+          <figure>
+            <img src="assets/demo-actions.svg" width="960" height="600" alt="Parking files on the Float shelf" loading="lazy">
+            <figcaption>Park files on the Float shelf</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- INSTALL -->
+    <section class="section" id="install" aria-labelledby="install-h">
+      <div class="wrap">
+        <h2 id="install-h">Install</h2>
+        <p class="section-lede">Metamorphosis runs in the background with a tray icon. Heavy extras (LibreOffice conversions, face and text detection, HEIC) download only when you first use them.</p>
+
+        <div class="tabs" data-tabs>
+          <div class="tab-list" role="tablist" aria-label="Operating system">
+            <button role="tab" id="tab-win" aria-controls="panel-win" aria-selected="true">Windows</button>
+            <button role="tab" id="tab-linux" aria-controls="panel-linux" aria-selected="false" tabindex="-1">Linux</button>
+          </div>
+
+          <div class="tab-panel" role="tabpanel" id="panel-win" aria-labelledby="tab-win">
+            <div class="method">
+              <h3>winget</h3>
+              <div class="code"><pre><code>winget install morph</code></pre><button class="copy" type="button">Copy</button></div>
+            </div>
+            <div class="method">
+              <h3>MSI installer</h3>
+              <p>Download <code>Metamorphosis_x.y.z_x64_en-US.msi</code> from the <a href="https://github.com/YOUR-GITHUB-USER/morph/releases/latest">latest release</a> and run it. A portable <code>.zip</code> is there too.</p>
+            </div>
+            <p class="note">Windows 10 22H2 or later, x64. If SmartScreen warns about a new publisher, check the release checksum first.</p>
+          </div>
+
+          <div class="tab-panel" role="tabpanel" id="panel-linux" aria-labelledby="tab-linux">
+            <div class="method">
+              <h3>Flathub</h3>
+              <div class="code"><pre><code>flatpak install flathub io.github.YOUR-GITHUB-USER.morph</code></pre><button class="copy" type="button">Copy</button></div>
+            </div>
+            <div class="method">
+              <h3>AppImage</h3>
+              <div class="code"><pre><code>chmod +x Metamorphosis_x.y.z_amd64.AppImage
+./Metamorphosis_x.y.z_amd64.AppImage</code></pre><button class="copy" type="button">Copy</button></div>
+            </div>
+            <div class="method">
+              <h3>Debian and Ubuntu (.deb)</h3>
+              <div class="code"><pre><code>sudo apt install ./morph_x.y.z_amd64.deb</code></pre><button class="copy" type="button">Copy</button></div>
+            </div>
+            <div class="method">
+              <h3>Arch Linux (AUR)</h3>
+              <div class="code"><pre><code>yay -S morph-bin</code></pre><button class="copy" type="button">Copy</button></div>
+            </div>
+            <p class="note">Files for AppImage and .deb are on the <a href="https://github.com/YOUR-GITHUB-USER/morph/releases/latest">releases page</a>. On X11 you get the full drag-and-tap experience. On Wayland, read the next section first.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- WAYLAND -->
+    <section class="section section-alt" id="wayland" aria-labelledby="wayland-h">
+      <div class="wrap wayland-grid">
+        <div>
+          <h2 id="wayland-h">On Wayland, the ring works a little differently</h2>
+          <p>Wayland stops apps from reading your keyboard globally, seeing the cursor over other windows, or opening a window wherever they like. That's good for security, but it means Metamorphosis can’t pop up under your cursor while you drag in another app.</p>
+          <p>So on Wayland you drag files onto the <strong>drop dock</strong> — a small target you keep at a screen edge — and the ring opens there. You can also use the right-click entry in your file manager, or log into an X11 session for the full experience.</p>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <caption>What works where</caption>
+            <thead>
+              <tr><th scope="col">Desktop</th><th scope="col">Ring at cursor</th><th scope="col">Drop dock</th><th scope="col">Shortcut to show dock</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">Windows</th><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+              <tr><th scope="row">Any X11 session</th><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+              <tr><th scope="row">KDE Plasma (Wayland)</th><td>No</td><td>Yes, pinned to an edge</td><td>Yes</td></tr>
+              <tr><th scope="row">GNOME (Wayland)</th><td>No</td><td>Yes, as a window</td><td>GNOME 48 and later</td></tr>
+              <tr><th scope="row">Sway, Hyprland</th><td>No</td><td>Yes, pinned to an edge</td><td>Depends on portal</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <figure class="wayland-shot">
+          <img src="assets/screenshot-wayland-dock.svg" width="960" height="600" alt="The drop dock at the right edge of a GNOME desktop" loading="lazy">
+        </figure>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="section" id="faq" aria-labelledby="faq-h">
+      <div class="wrap faq-wrap">
+        <h2 id="faq-h">Questions</h2>
+        <details>
+          <summary>Are my files uploaded anywhere?</summary>
+          <p>No. Every conversion and tool runs on your computer. Metamorphosis only goes online to check for updates (which you can turn off) and to download optional components you ask for.</p>
+        </details>
+        <details>
+          <summary>Will it change or delete my original file?</summary>
+          <p>No. Results are always new files saved next to the original, with a name like <code>photo Cropped.jpg</code>. If a name is taken, a number is added. Only the Move action touches originals, and only because you asked it to.</p>
+        </details>
+        <details>
+          <summary>The keys clash with my setup. Can I change them?</summary>
+          <p>Yes. Each ring's key can be changed in Settings. Some Linux window managers use Alt for dragging windows; that only applies when Alt is held as you press the mouse button, so tapping it mid-drag is safe — but you can pick another key.</p>
+        </details>
+        <details>
+          <summary>Why do some segments say "Install component"?</summary>
+          <p>Office conversions use LibreOffice, face and text detection use small local AI models, and HEIC needs a separate decoder. They're downloaded once, on first use, to keep the main install small.</p>
+        </details>
+        <details>
+          <summary>Can I use it without dragging?</summary>
+          <p>Yes. Right-click files in Explorer, Dolphin, Nautilus, Nemo or Thunar, or use the <code>morph</code> command line. The ring can also be driven with <kbd>1</kbd>–<kbd>7</kbd>, arrow keys, Enter and Esc.</p>
+        </details>
+        <details>
+          <summary>Can I add my own segments?</summary>
+          <p>Yes. Put a short TOML recipe in your config folder and it appears in the ring for matching files. Recipes can wrap any command-line tool installed on your machine.</p>
+        </details>
+        <details>
+          <summary>Why “Metamorphosis”?</summary>
+          <p>It’s named after Philip Glass’s album <cite>Metamorphosis</cite>, the way Stands in JoJo’s Bizarre Adventure are named after songs and albums. Its Stand stats:</p>
+          <table class="stand">
+            <caption>「METAMORPHOSIS」</caption>
+            <tbody>
+              <tr><th scope="row">Power</th><td>B</td><td></td></tr>
+              <tr><th scope="row">Speed</th><td>A</td><td></td></tr>
+              <tr><th scope="row">Range</th><td>C</td><td>Only what you drag</td></tr>
+              <tr><th scope="row">Durability</th><td>A</td><td>Originals are never destroyed</td></tr>
+              <tr><th scope="row">Precision</th><td>A</td><td></td></tr>
+              <tr><th scope="row">Development potential</th><td>A</td><td></td></tr>
+            </tbody>
+          </table>
+        </details>
+        <details>
+          <summary>Is this Tangerine for Windows?</summary>
+          <p>No. Metamorphosis is an independent open-source project inspired by the drag-to-convert idea of Tangerine for Mac. It isn't affiliated with Tangerine or its developer. If you're on a Mac, try Tangerine.</p>
+        </details>
+        <details>
+          <summary>How much does it cost?</summary>
+          <p>Nothing. Metamorphosis is free and open source, with no conversion limits.</p>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-row">
+      <p>Metamorphosis (<code>morph</code>) is free and open source.</p>
+      <ul class="footer-links">
+        <li><a href="https://github.com/YOUR-GITHUB-USER/morph">Source code</a></li>
+        <li><a href="https://github.com/YOUR-GITHUB-USER/morph/releases">Releases</a></li>
+        <li><a href="https://github.com/YOUR-GITHUB-USER/morph/issues">Report a bug</a></li>
+        <li><a href="https://github.com/YOUR-GITHUB-USER/morph/blob/main/README.md">Roadmap</a></li>
+      </ul>
+      <p class="disclaimer">Not affiliated with Tangerine or Leap Studio, Philip Glass, or JoJo’s Bizarre Adventure. All product names belong to their owners.</p>
+    </div>
+  </footer>
+
+  <script src="hud-ring.js" defer></script>
+  <script src="main.js" defer></script>
+</body>
+</html>

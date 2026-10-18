@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Metamorphosis — HUD ring mockup (expanded mode)</title>
+<style>
+/* Fonts are bundled, never fetched. Put the OFL WOFF2 files in design/fonts/ (same files as app/ui/hud/fonts/). */
+@font-face { font-family: "Chakra Petch"; font-weight: 600; src: local("Chakra Petch SemiBold"), url("fonts/ChakraPetch-SemiBold.woff2") format("woff2"); }
+@font-face { font-family: "Chakra Petch"; font-weight: 700; src: local("Chakra Petch Bold"), url("fonts/ChakraPetch-Bold.woff2") format("woff2"); }
+@font-face { font-family: "JetBrains Mono"; font-weight: 400; src: local("JetBrains Mono"), url("fonts/JetBrainsMono-Regular.woff2") format("woff2"); }
+/* Metamorphosis — holographic HUD ring (reference implementation of the S2 design system) */
+.hud {
+  --hud-line: #4FE3FF;
+  --hud-accent: #FFB347;
+  --hud-text: #BDF4FF;
+  --hud-muted: #6FB6C6;
+  --hud-backdrop: rgba(4, 10, 18, 0.72);
+  --hud-core: rgba(4, 10, 18, 0.90);
+  --font-label: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+  --font-readout: "JetBrains Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+  position: relative;
+  color: var(--hud-text);
+  font-family: var(--font-label);
+}
+.hud-svg { display: block; width: 100%; height: auto; overflow: visible; }
+
+/* Decorative layers */
+.hud-spin { transform-box: view-box; transform-origin: 50% 50%; }
+.hud-spin-slow { animation: hud-cw 40s linear infinite; }
+.hud-spin-mid  { animation: hud-ccw 22s linear infinite; }
+.hud-spin-fast { animation: hud-cw 9s linear infinite; }
+@keyframes hud-cw  { to { transform: rotate(360deg); } }
+@keyframes hud-ccw { to { transform: rotate(-360deg); } }
+
+.hud-scan { animation: hud-scan 6s linear infinite; }
+@keyframes hud-scan { from { transform: translateY(-380px); } to { transform: translateY(260px); } }
+
+/* Segments */
+.hud-seg { cursor: pointer; outline: none; }
+.hud-seg path {
+  fill: color-mix(in srgb, var(--hud-line) 7%, transparent);
+  stroke: color-mix(in srgb, var(--hud-line) 65%, transparent);
+  stroke-width: 1.5;
+  transition: fill 150ms ease, stroke 150ms ease;
+}
+.hud-seg .hud-label {
+  fill: var(--hud-text); font-family: var(--font-label); font-weight: 600; font-size: 14px;
+  letter-spacing: 2px; text-transform: uppercase; pointer-events: none;
+}
+.hud-seg .hud-num { fill: var(--hud-muted); font-family: var(--font-readout); font-size: 9px; pointer-events: none; }
+.hud-seg.is-hot path { fill: color-mix(in srgb, var(--hud-accent) 28%, transparent); stroke: var(--hud-accent); }
+.hud-seg.is-hot .hud-label { fill: #FFFFFF; }
+.hud-seg:focus-visible path { stroke: #FFFFFF; stroke-width: 2.5; }
+.hud-glow { filter: drop-shadow(0 0 6px rgba(79, 227, 255, 0.55)); }
+
+/* Centre readout */
+.hud-cap, .hud-meta, .hud-hint { font-family: var(--font-readout); font-size: 10px; }
+.hud-cap { fill: var(--hud-muted); letter-spacing: 2px; }
+.hud-hint { fill: var(--hud-text); letter-spacing: 1px; }
+.hud-meta { fill: var(--hud-muted); }
+.hud-action { fill: var(--hud-accent); font-family: var(--font-label); font-weight: 700; font-size: 24px; letter-spacing: 3px; }
+
+/* Boot-up: outlines draw in, decorative rings flicker on */
+.hud-boot .hud-draw { stroke-dasharray: 1; animation: hud-draw 240ms ease-out both; animation-delay: calc(var(--d, 0) * 30ms); }
+.hud-boot .hud-flicker { animation: hud-flicker 320ms steps(1, end) both; }
+.hud-boot .hud-seg .hud-label, .hud-boot .hud-seg .hud-num, .hud-boot .hud-center { animation: hud-fade 200ms ease-out 120ms both; }
+@keyframes hud-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes hud-flicker { 0% { opacity: 0; } 35% { opacity: 1; } 45% { opacity: 0.4; } 60%, 100% { opacity: 1; } }
+@keyframes hud-fade { from { opacity: 0; } to { opacity: 1; } }
+
+/* Drop: collapse into a dot, then pulse */
+.hud-body { transform-box: view-box; transform-origin: 50% 50%; transition: transform 180ms ease-in, opacity 180ms ease-in; }
+.hud-collapsed .hud-body { transform: scale(0.02); opacity: 0; }
+.hud-pulse { fill: none; stroke: var(--hud-accent); stroke-width: 2; opacity: 0; transform-box: view-box; transform-origin: 50% 50%; }
+.hud-collapsed .hud-pulse { animation: hud-pulse 400ms ease-out 180ms both; }
+@keyframes hud-pulse { from { opacity: 1; transform: scale(0.05); } to { opacity: 0; transform: scale(1); } }
+.hud-dot { fill: var(--hud-accent); opacity: 0; }
+.hud-collapsed .hud-dot { opacity: 1; transition: opacity 80ms 120ms; }
+.hud-cancelled .hud-body { opacity: 0; transition: opacity 120ms; }
+
+/* Confirmation toast */
+.hud-toast {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  padding: 0.55rem 0.9rem; white-space: nowrap;
+  background: var(--hud-core); border: 1px solid var(--hud-accent);
+  color: var(--hud-text); font-family: var(--font-readout); font-size: 12px; letter-spacing: 1px;
+  box-shadow: 0 0 18px color-mix(in srgb, var(--hud-accent) 35%, transparent);
+  opacity: 0; pointer-events: none; transition: opacity 150ms;
+}
+.hud-toast b { color: var(--hud-accent); font-family: var(--font-label); font-weight: 700; letter-spacing: 2px; }
+.hud-toast.is-on { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hud-spin-slow, .hud-spin-mid, .hud-spin-fast, .hud-scan { animation: none; }
+  .hud-scan { display: none; }
+  .hud-boot .hud-draw, .hud-boot .hud-flicker, .hud-boot .hud-seg .hud-label, .hud-boot .hud-seg .hud-num, .hud-boot .hud-center { animation: hud-fade 100ms both; stroke-dasharray: none; }
+  .hud-body { transition: opacity 100ms; }
+  .hud-collapsed .hud-body { transform: none; }
+  .hud-collapsed .hud-pulse { animation: none; }
+  .hud-seg path { transition: none; }
+}
+@media (forced-colors: active) {
+  .hud-glow { filter: none; }
+  .hud-seg path { stroke: CanvasText; fill: Canvas; }
+  .hud-seg.is-hot path { stroke: Highlight; fill: Highlight; }
+  .hud-seg .hud-label, .hud-action { fill: CanvasText; }
+}
+
+html, body { margin: 0; height: 100%; }
+body {
+  background-color: #04070C;
+  background-image: linear-gradient(rgba(79,227,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(79,227,255,.05) 1px, transparent 1px);
+  background-size: 40px 40px; color: #BDF4FF; font-family: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+}
+.frame { position: relative; min-height: 100%; box-sizing: border-box; padding: 40px 48px; display: grid; grid-template-columns: 250px 1fr 250px; grid-template-rows: auto 1fr auto; gap: 24px 32px; }
+.corner { position: absolute; width: 40px; height: 40px; border: 0 solid #4FE3FF; }
+.tl { left: 24px; top: 24px; border-left-width: 2px; border-top-width: 2px; } .tr { right: 24px; top: 24px; border-right-width: 2px; border-top-width: 2px; }
+.bl { left: 24px; bottom: 24px; border-left-width: 2px; border-bottom-width: 2px; } .br { right: 24px; bottom: 24px; border-right-width: 2px; border-bottom-width: 2px; }
+header { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; }
+.blink { width: 8px; height: 8px; border-radius: 50%; background: var(--acc, #FFB347); animation: b 1.6s ease-in-out infinite; }
+@keyframes b { 50% { opacity: .35; } }
+.brand { font-weight: 700; letter-spacing: 4px; font-size: 14px; color: #4FE3FF; }
+.mono { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 11px; color: #6FB6C6; }
+h2 { margin: 0 0 12px; font-size: 12px; font-weight: 600; letter-spacing: 3px; color: #4FE3FF; border-bottom: 1px solid rgba(79,227,255,.35); padding-bottom: 8px; }
+.thumb { width: 120px; height: 160px; border: 1px solid rgba(79,227,255,.6); background: rgba(79,227,255,.06); margin-bottom: 14px; }
+dl { display: grid; grid-template-columns: 70px 1fr; row-gap: 8px; margin: 0; font-family: "JetBrains Mono", monospace; font-size: 12px; }
+dt { color: #6FB6C6; } dd { margin: 0; } .armed { color: var(--acc, #FFB347); }
+.center { display: grid; place-items: center; }
+#ring { width: min(600px, 100%); }
+.list { display: flex; flex-direction: column; gap: 10px; }
+.list button { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 14px; text-align: left; cursor: pointer; font: 600 13px "Chakra Petch", sans-serif; letter-spacing: 2px; background: rgba(79,227,255,.04); border: 1px solid rgba(79,227,255,.35); color: #BDF4FF; }
+.list button.on { border-color: var(--acc, #FFB347); background: color-mix(in srgb, var(--acc, #FFB347) 18%, transparent); color: #fff; }
+.list button:focus-visible { outline: 2px solid var(--acc, #FFB347); outline-offset: 2px; }
+.out { display: flex; flex-direction: column; gap: 6px; margin-top: 32px; }
+footer { grid-column: 1 / -1; display: flex; justify-content: center; align-items: center; gap: 10px; font-size: 12px; letter-spacing: 2px; color: #6FB6C6; }
+footer .k { border: 1px solid #4FE3FF; color: #4FE3FF; padding: 4px 10px; font-weight: 600; }
+.accent { display: flex; gap: 8px; margin-top: 20px; }
+.accent button { width: 22px; height: 22px; border-radius: 50%; border: 2px solid rgba(189,244,255,.35); cursor: pointer; }
+@media (max-width: 1000px) { .frame { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .blink { animation: none; } }
+</style>
+</head>
+<body>
+<div class="frame">
+  <span class="corner tl" aria-hidden="true"></span><span class="corner tr" aria-hidden="true"></span>
+  <span class="corner bl" aria-hidden="true"></span><span class="corner br" aria-hidden="true"></span>
+  <header><span class="blink" aria-hidden="true"></span><span class="brand">METAMORPHOSIS</span><span class="mono">// STAND ACTIVE · v0.1</span></header>
+
+  <section aria-labelledby="t">
+    <h2 id="t">TARGET ACQUIRED</h2>
+    <div class="thumb" aria-hidden="true"></div>
+    <dl>
+      <dt>FILE</dt><dd>Page 001.jpg</dd>
+      <dt>TYPE</dt><dd>JPEG IMAGE</dd>
+      <dt>SIZE</dt><dd>1.1 MB</dd>
+      <dt>DIM</dt><dd>1240 × 1754</dd>
+      <dt>STATE</dt><dd class="armed">ARMED</dd>
+    </dl>
+    <div class="accent" role="group" aria-label="Accent colour">
+      <button style="background:#FFB347" data-c="#FFB347" aria-label="Amber"></button>
+      <button style="background:#4FE3FF" data-c="#4FE3FF" aria-label="Cyan"></button>
+      <button style="background:#FF5EA8" data-c="#FF5EA8" aria-label="Pink"></button>
+      <button style="background:#9CFF6E" data-c="#9CFF6E" aria-label="Lime"></button>
+    </div>
+  </section>
+
+  <div class="center"><div id="ring"></div></div>
+
+  <section aria-labelledby="a">
+    <h2 id="a">ACTIONS · KEYS 1–7</h2>
+    <div class="list" id="list"></div>
+    <div class="out mono" aria-live="polite">
+      <span>OUTPUT</span>
+      <span id="out" style="color:#BDF4FF"></span>
+      <span>SOURCE UNTOUCHED · SAVED BESIDE ORIGINAL</span>
+      <span id="status" class="armed">AWAITING DROP</span>
+    </div>
+  </section>
+
+  <footer><span class="k">SHIFT</span><span>+ DRAG</span><span aria-hidden="true" style="color:#4FE3FF">▸</span><span>DROP ON A SEGMENT</span></footer>
+</div>
+<script>
+/* Metamorphosis — HUD ring component (no dependencies).
+   createHudRing(host, { items, file, onHover, onDrop, accent }) → { setItems, setAccent, boot, cancel, destroy } */
+(function (global) {
+  'use strict';
+  const NS = 'http://www.w3.org/2000/svg';
+  const R_IN = 122, R_OUT = 232, R_LABEL = 160, R_NUM = 200, GAP_DEG = 1.8;
+
+  const el = (name, attrs = {}, parent) => {
+    const n = document.createElementNS(NS, name);
+    for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+    if (parent) parent.append(n);
+    return n;
+  };
+  const polar = (r, deg) => { const a = (deg - 90) * Math.PI / 180; return [r * Math.cos(a), r * Math.sin(a)]; };
+  const sector = (a0, a1) => {
+    const [x0, y0] = polar(R_OUT, a0), [x1, y1] = polar(R_OUT, a1), [x2, y2] = polar(R_IN, a1), [x3, y3] = polar(R_IN, a0);
+    const L = a1 - a0 > 180 ? 1 : 0, f = (n) => n.toFixed(1);
+    return `M${f(x0)} ${f(y0)}A${R_OUT} ${R_OUT} 0 ${L} 1 ${f(x1)} ${f(y1)}L${f(x2)} ${f(y2)}A${R_IN} ${R_IN} 0 ${L} 0 ${f(x3)} ${f(y3)}Z`;
+  };
+  const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function createHudRing(host, opts) {
+    let items = opts.items || [];
+    let file = opts.file || { size: '1.1 MB', type: 'JPG' };
+    let hot = 0;
+    let busy = false;
+
+    host.classList.add('hud');
+    if (opts.accent) host.style.setProperty('--hud-accent', opts.accent);
+    const svg = el('svg', { class: 'hud-svg', viewBox: '-300 -300 600 600', role: 'group', 'aria-label': opts.label || 'Action ring' }, host);
+    const defs = el('defs', {}, svg);
+    const clip = el('clipPath', { id: `hud-clip-${Math.random().toString(36).slice(2, 8)}` }, defs);
+    el('circle', { r: 262 }, clip);
+    const grad = el('linearGradient', { id: clip.id + '-g', x1: 0, y1: 0, x2: 0, y2: 1 }, defs);
+    el('stop', { offset: 0, 'stop-color': '#4FE3FF', 'stop-opacity': 0 }, grad);
+    el('stop', { offset: 0.5, 'stop-color': '#4FE3FF', 'stop-opacity': 0.06 }, grad);
+    el('stop', { offset: 1, 'stop-color': '#4FE3FF', 'stop-opacity': 0 }, grad);
+
+    const body = el('g', { class: 'hud-body' }, svg);
+    el('circle', { r: 262, fill: 'var(--hud-backdrop)', class: 'hud-flicker' }, body);
+    const scanWrap = el('g', { 'clip-path': `url(#${clip.id})`, 'aria-hidden': 'true' }, body);
+    el('rect', { x: -262, y: 0, width: 524, height: 120, fill: `url(#${grad.id})`, class: 'hud-scan' }, scanWrap);
+
+    const deco = el('g', { 'aria-hidden': 'true' }, body);
+    const ring = (r, cls, attrs) => {
+      const g = el('g', { class: `hud-spin ${cls} hud-flicker` }, deco);
+      el('circle', Object.assign({ r, fill: 'none' }, attrs), g);
+    };
+    ring(282, 'hud-spin-slow', { stroke: 'rgba(79,227,255,.45)', 'stroke-width': 1, 'stroke-dasharray': '2 8' });
+    ring(268, 'hud-spin-mid', { stroke: 'rgba(79,227,255,.7)', 'stroke-width': 2, 'stroke-dasharray': '120 40 12 40 60 80' });
+    ring(248, 'hud-spin-fast', { stroke: 'var(--hud-accent)', 'stroke-opacity': 0.6, 'stroke-width': 1.5, 'stroke-dasharray': '30 400' });
+    el('circle', { r: 240, fill: 'none', stroke: 'rgba(79,227,255,.25)', 'stroke-width': 1, pathLength: 1, class: 'hud-draw', style: '--d:0' }, deco);
+    [[0, -290, 0, -270], [0, 270, 0, 290], [-290, 0, -270, 0], [270, 0, 290, 0]].forEach(([x1, y1, x2, y2]) =>
+      el('line', { x1, y1, x2, y2, stroke: '#4FE3FF', 'stroke-width': 1, class: 'hud-flicker' }, deco));
+
+    const segLayer = el('g', { class: 'hud-glow' }, body);
+
+    const core = el('g', { class: 'hud-center' }, body);
+    el('circle', { r: 108, fill: 'var(--hud-core)', stroke: 'rgba(79,227,255,.55)', 'stroke-width': 1 }, core);
+    const inner = el('g', { class: 'hud-spin hud-spin-mid', 'aria-hidden': 'true' }, core);
+    el('circle', { r: 98, fill: 'none', stroke: 'rgba(79,227,255,.35)', 'stroke-width': 1, 'stroke-dasharray': '1 5' }, inner);
+    const t = (y, cls, txt) => { const n = el('text', { x: 0, y, 'text-anchor': 'middle', class: cls }, core); n.textContent = txt; return n; };
+    t(-38, 'hud-cap', 'ACTION');
+    const actionText = t(-4, 'hud-action', '');
+    t(24, 'hud-hint', 'RELEASE TO APPLY');
+    const metaText = t(46, 'hud-meta', '');
+
+    el('circle', { r: 3, class: 'hud-dot' }, svg);
+    el('circle', { r: 240, class: 'hud-pulse' }, svg);
+
+    const toast = document.createElement('div');
+    toast.className = 'hud-toast';
+    toast.setAttribute('role', 'status');
+    host.append(toast);
+
+    let segs = [];
+    function renderSegments() {
+      segLayer.textContent = '';
+      const n = items.length, step = 360 / n;
+      segs = items.map((item, i) => {
+        const mid = i * step, a0 = mid - step / 2 + GAP_DEG, a1 = mid + step / 2 - GAP_DEG;
+        const g = el('g', { class: 'hud-seg', role: 'button', tabindex: i === hot ? '0' : '-1', 'aria-label': `${item.label}, ${i + 1} of ${n}` }, segLayer);
+        el('path', { d: sector(a0, a1), pathLength: 1, class: 'hud-draw', style: `--d:${i + 1}` }, g);
+        const [lx, ly] = polar(R_LABEL, mid), [nx, ny] = polar(R_NUM, mid);
+        el('text', { x: lx.toFixed(1), y: ly.toFixed(1), 'text-anchor': 'middle', 'dominant-baseline': 'middle', class: 'hud-label' }, g).textContent = item.label;
+        el('text', { x: nx.toFixed(1), y: ny.toFixed(1), 'text-anchor': 'middle', 'dominant-baseline': 'middle', class: 'hud-num' }, g).textContent = String(i + 1).padStart(2, '0');
+        g.addEventListener('pointerenter', () => { if (!busy) setHot(i); });
+        g.addEventListener('focus', () => { if (!busy) setHot(i); });
+        g.addEventListener('click', () => drop(i));
+        return g;
+      });
+      setHot(Math.min(hot, n - 1));
+    }
+
+    function setHot(i) {
+      hot = i;
+      segs.forEach((s, j) => { s.classList.toggle('is-hot', j === i); s.setAttribute('tabindex', j === i ? '0' : '-1'); });
+      actionText.textContent = items[i] ? items[i].label.toUpperCase() : '';
+      metaText.textContent = `${file.size} · ${file.type}`;
+      opts.onHover && opts.onHover(items[i], i);
+    }
+
+    function boot() {
+      host.classList.remove('hud-collapsed', 'hud-cancelled', 'hud-boot');
+      void host.offsetWidth; // restart CSS animations
+      host.classList.add('hud-boot');
+    }
+
+    function drop(i) {
+      if (busy || !items[i]) return;
+      busy = true;
+      setHot(i);
+      host.classList.add('hud-collapsed');
+      const out = items[i].out ? items[i].out(file) : null;
+      const verb = items[i].verb || 'SAVED';
+      toast.innerHTML = `<b>✓ ${verb}</b> · ${out || items[i].label}`;
+      const fast = reducedMotion();
+      setTimeout(() => toast.classList.add('is-on'), fast ? 100 : 380);
+      setTimeout(() => { toast.classList.remove('is-on'); }, fast ? 1700 : 1980);
+      setTimeout(() => { busy = false; boot(); opts.onDrop && opts.onDrop(items[i], i, out); }, fast ? 1800 : 2150);
+    }
+
+    function cancel() {
+      if (busy) return;
+      busy = true;
+      host.classList.add('hud-cancelled');
+      setTimeout(() => { busy = false; boot(); }, 700);
+    }
+
+    host.addEventListener('keydown', (e) => {
+      if (/^[1-9]$/.test(e.key) && Number(e.key) <= items.length) { e.preventDefault(); drop(Number(e.key) - 1); return; }
+      const n = items.length;
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); setHot((hot + 1) % n); segs[hot].focus(); }
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); setHot((hot - 1 + n) % n); segs[hot].focus(); }
+      if ((e.key === 'Enter' || e.key === ' ') && e.target.closest && e.target.closest('.hud-seg')) { e.preventDefault(); drop(hot); }
+      if (e.key === 'Escape') cancel();
+    });
+
+    renderSegments();
+    boot();
+
+    return {
+      setItems(next, nextFile) { items = next; if (nextFile) file = nextFile; hot = 0; renderSegments(); boot(); },
+      setAccent(c) { host.style.setProperty('--hud-accent', c); },
+      drop, cancel, boot,
+      focus() { segs[hot] && segs[hot].focus(); },
+      destroy() { host.textContent = ''; },
+    };
+  }
+
+  global.createHudRing = createHudRing;
+})(window);
+
+</script>
+<script>
+(() => {
+  const file = { stem: 'Page 001', size: '1.1 MB', type: 'JPG' };
+  const t = (label, suffix, ext = 'jpg') => ({ label, out: (f) => `${f.stem} ${suffix}.${ext}` });
+  const items = [t('Compress','Compressed'), t('Metadata','Clean'), t('Edit','Edited'), t('Annotate','Annotated'), t('Add BG','With BG','png'), t('Crop','Cropped'), t('Redact','Redacted')];
+  const list = document.getElementById('list'), out = document.getElementById('out'), status = document.getElementById('status');
+  const buttons = items.map((it, i) => {
+    const b = document.createElement('button');
+    b.innerHTML = `<span class="mono" style="opacity:.8">0${i + 1}</span><span>${it.label.toUpperCase()}</span>`;
+    list.append(b); return b;
+  });
+  const ring = createHudRing(document.getElementById('ring'), {
+    items, file,
+    onHover: (it, i) => { out.textContent = '→ ' + it.out(file); buttons.forEach((b, j) => b.classList.toggle('on', j === i)); },
+    onDrop: (it, i, o) => { status.textContent = '✓ SAVED · ' + o; },
+  });
+  buttons.forEach((b, i) => b.addEventListener('click', () => ring.drop(i)));
+  document.addEventListener('keydown', (e) => { if (/^[1-7]$/.test(e.key) && !e.target.closest('#ring')) ring.drop(Number(e.key) - 1); });
+  document.querySelectorAll('.accent button').forEach((b) => b.addEventListener('click', () => {
+    ring.setAccent(b.dataset.c); document.body.style.setProperty('--acc', b.dataset.c);
+  }));
+})();
+</script>
+</body>
+</html>
