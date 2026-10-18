@@ -1,6 +1,7 @@
 //! Media engine (FFmpeg sidecar): video/audio conversions, video → GIF/MP3,
 //! and compression to a target size.
 
+pub mod audio;
 pub mod ffmpeg;
 pub mod tools;
 
