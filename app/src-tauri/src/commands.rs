@@ -635,3 +635,62 @@ pub async fn video_strip(path: PathBuf, count: u32, width: u32) -> Result<Vec<Pa
     .await
     .map_err(|e| e.to_string())?
 }
+
+/// Waveform peaks for the audio editor.
+#[tauri::command]
+pub async fn audio_peaks(path: PathBuf, buckets: usize) -> Result<Vec<(f32, f32)>, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        morph_engines::media::audio::peaks(&path, buckets.clamp(10, 4000))
+            .map_err(|e| format!("{e:#}"))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// Integrated loudness, range and true peak (before/after meters).
+#[tauri::command]
+pub async fn audio_loudness(
+    path: PathBuf,
+) -> Result<morph_engines::media::audio::Loudness, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        morph_engines::media::audio::measure(&path).map_err(|e| format!("{e:#}"))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// Run an operation into the preview cache (A/B listening) and return the result.
+#[tauri::command]
+pub async fn preview_op(
+    state: State<'_, AppState>,
+    op: String,
+    paths: Vec<PathBuf>,
+    params: Params,
+) -> Result<PathBuf, String> {
+    let registry = state.registry();
+    tauri::async_runtime::spawn_blocking(move || {
+        let dir = morph_core::components::data_dir()
+            .join("cache")
+            .join("preview");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+        let job = Job {
+            op,
+            inputs: paths,
+            params,
+            out_dir: Some(dir),
+        };
+        let r = Runner::new(&registry)
+            .run(&job, |_| {})
+            .map_err(|e| e.to_string())?;
+        if let Some((_, e)) = r.errors.first() {
+            return Err(e.clone());
+        }
+        r.outputs
+            .into_iter()
+            .next()
+            .ok_or_else(|| "no output".into())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}

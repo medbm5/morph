@@ -47,6 +47,9 @@ pub fn run() {
             commands::video_info,
             commands::video_frame,
             commands::video_strip,
+            commands::audio_peaks,
+            commands::audio_loudness,
+            commands::preview_op,
             expanded::expanded_request,
         ])
         .setup(|app| {
