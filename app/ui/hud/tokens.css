@@ -1,0 +1,68 @@
+/* Metamorphosis HUD — design tokens.
+   Fonts are bundled (SIL OFL 1.1, licences in ./fonts/) and never fetched from the network. */
+
+@font-face { font-family: "Chakra Petch"; font-weight: 400; font-display: block; src: url("fonts/ChakraPetch-Regular.woff2") format("woff2"); }
+@font-face { font-family: "Chakra Petch"; font-weight: 500; font-display: block; src: url("fonts/ChakraPetch-Medium.woff2") format("woff2"); }
+@font-face { font-family: "Chakra Petch"; font-weight: 600; font-display: block; src: url("fonts/ChakraPetch-SemiBold.woff2") format("woff2"); }
+@font-face { font-family: "Chakra Petch"; font-weight: 700; font-display: block; src: url("fonts/ChakraPetch-Bold.woff2") format("woff2"); }
+@font-face { font-family: "JetBrains Mono"; font-weight: 400; font-display: block; src: url("fonts/JetBrainsMono-Regular.woff2") format("woff2"); }
+@font-face { font-family: "JetBrains Mono"; font-weight: 500; font-display: block; src: url("fonts/JetBrainsMono-Medium.woff2") format("woff2"); }
+
+:root {
+  /* Colour */
+  --hud-line: #4FE3FF;              /* cyan — outlines, ticks, structure */
+  --hud-accent: #FFB347;            /* tangerine amber — hover, sweep, centre label; user-configurable */
+  --hud-text: #BDF4FF;              /* labels and readouts */
+  --hud-muted: #6FB6C6;             /* captions, numbers, secondary readouts */
+  --hud-backdrop: rgba(4, 10, 18, 0.72);  /* disc behind the ring */
+  --hud-core: rgba(4, 10, 18, 0.90);      /* centre disc and panels */
+  --hud-grid-bg: #04070C;           /* expanded mode / editor background */
+  --hud-grid-line: rgba(79, 227, 255, 0.05);
+  --hud-grid-size: 40px;
+  --hud-danger: #FF5E6C;
+  --hud-ok: #9CFF6E;
+
+  /* Derived */
+  --hud-line-45: color-mix(in srgb, var(--hud-line) 45%, transparent);
+  --hud-line-35: color-mix(in srgb, var(--hud-line) 35%, transparent);
+  --hud-line-25: color-mix(in srgb, var(--hud-line) 25%, transparent);
+  --hud-line-7: color-mix(in srgb, var(--hud-line) 7%, transparent);
+  --hud-accent-28: color-mix(in srgb, var(--hud-accent) 28%, transparent);
+  --hud-glow: drop-shadow(0 0 6px rgba(79, 227, 255, 0.55));
+
+  /* Type */
+  --font-label: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+  --font-readout: "JetBrains Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+
+  /* Motion */
+  --hud-boot: 240ms;
+  --hud-boot-stagger: 30ms;
+  --hud-hover: 150ms;
+  --hud-switch-out: 100ms;
+  --hud-switch-in: 160ms;
+  --hud-collapse: 180ms;
+  --hud-pulse: 400ms;
+  --hud-toast: 1600ms;
+  --hud-cancel: 120ms;
+  --hud-spin-slow: 40s;
+  --hud-spin-mid: 22s;
+  --hud-spin-fast: 9s;
+  --hud-scan: 6s;
+}
+
+/* Accent presets (settings picker). */
+:root[data-accent="amber"] { --hud-accent: #FFB347; }
+:root[data-accent="cyan"]  { --hud-accent: #4FE3FF; }
+:root[data-accent="pink"]  { --hud-accent: #FF5EA8; }
+:root[data-accent="lime"]  { --hud-accent: #9CFF6E; }
+
+/* Expanded-mode grid background. */
+.hud-grid {
+  background-color: var(--hud-grid-bg);
+  background-image:
+    linear-gradient(var(--hud-grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--hud-grid-line) 1px, transparent 1px);
+  background-size: var(--hud-grid-size) var(--hud-grid-size);
+  color: var(--hud-text);
+  font-family: var(--font-label);
+}
