@@ -15,6 +15,7 @@
     const version = await T.app.getVersion();
     if (req.mode === 'components') { window.MorphComponents.show(root, version, req.op); return; }
     if (req.mode === 'history') { window.MorphHistory.show(root, version); return; }
+    if (req.mode === 'wayland') { window.MorphWayland.show(root, version); return; }
     if (req.mode === 'ring') { showRing(req, version); return; }
     const panel = createHudPanel(root, { version, footer: false, title: 'OPERATION', wide: true });
     if (req.mode !== 'editor') return;
