@@ -3,6 +3,7 @@
 mod actions;
 mod commands;
 mod expanded;
+mod integration;
 #[cfg(target_os = "linux")]
 mod linux_shape;
 mod logger;
@@ -17,6 +18,12 @@ pub fn run() {
     logger::init();
     log::info!("Metamorphosis {} starting", morph_core::VERSION);
     let app = tauri::Builder::default()
+        // A second launch (file-manager menu, `--ring`, `--open`) hands its arguments
+        // to the running app instead of starting another one.
+        .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
+            handle_args(app, &argv, false);
+        }))
+        .plugin(integration::shortcut_plugin())
         .manage(AppState::new(morph_core::Registry::new()))
         .manage(actions::Shelf::default())
         .manage(expanded::Pending::default())
@@ -61,33 +68,9 @@ pub fn run() {
             tray::create(app.handle())?;
             overlay::create(app.handle())?;
             overlay::start_watcher(app.handle());
-            // `--open <op> <files…>` opens an operation's editor directly (file-manager
-            // entries and scripted screenshots); `--background` (autostart) stays in the tray.
+            integration::install_once(app.handle());
             let args: Vec<String> = std::env::args().collect();
-            if let Some(i) = args.iter().position(|a| a == "--open") {
-                if let Some(op) = args.get(i + 1) {
-                    let files: Vec<std::path::PathBuf> =
-                        args[i + 2..].iter().map(Into::into).collect();
-                    if let Err(e) = expanded::open(app.handle(), op, &files) {
-                        log::error!("--open {op}: {e:#}");
-                    }
-                }
-            } else if let Some(i) = args.iter().position(|a| a == "--ring") {
-                // `--ring <convert|tools|actions> <files…>`: file-manager menu entries.
-                let ring = args.get(i + 1).cloned().unwrap_or_else(|| "convert".into());
-                let files: Vec<std::path::PathBuf> = args[i + 2..].iter().map(Into::into).collect();
-                let req = expanded::Request {
-                    mode: "ring".into(),
-                    ring: Some(ring),
-                    paths: files,
-                    op: None,
-                };
-                if let Err(e) = expanded::show(app.handle(), req) {
-                    log::error!("--ring: {e:#}");
-                }
-            } else if !args.iter().any(|a| a == "--background") {
-                show_window(app.handle(), "about");
-            }
+            handle_args(app.handle(), &args, true);
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -110,6 +93,43 @@ pub fn run() {
             let _ = handle.get_webview_window("about").map(|w| w.hide());
         }
     });
+}
+
+/// Act on command-line arguments, at startup or forwarded from a second launch:
+/// `--open <op> <files…>`, `--ring <ring> <files…>`, `--background`.
+fn handle_args(app: &tauri::AppHandle, args: &[String], startup: bool) {
+    if args.iter().any(|a| a == "--uninstall-menus") {
+        // Used by the uninstaller and by users who prefer no context-menu entries.
+        if let Err(e) = morph_platform::shell_menu::uninstall() {
+            log::warn!("removing menus: {e:#}");
+        }
+        let _ =
+            std::fs::remove_file(morph_core::components::config_dir().join("integration.version"));
+        app.exit(0);
+        return;
+    }
+    if let Some(i) = args.iter().position(|a| a == "--open") {
+        if let Some(op) = args.get(i + 1) {
+            let files: Vec<std::path::PathBuf> = args[i + 2..].iter().map(Into::into).collect();
+            if let Err(e) = expanded::open(app, op, &files) {
+                log::error!("--open {op}: {e:#}");
+            }
+        }
+    } else if let Some(i) = args.iter().position(|a| a == "--ring") {
+        let ring = args.get(i + 1).cloned().unwrap_or_else(|| "convert".into());
+        let files: Vec<std::path::PathBuf> = args[i + 2..].iter().map(Into::into).collect();
+        let req = expanded::Request {
+            mode: "ring".into(),
+            ring: Some(ring),
+            paths: files,
+            op: None,
+        };
+        if let Err(e) = expanded::show(app, req) {
+            log::error!("--ring: {e:#}");
+        }
+    } else if !(startup && args.iter().any(|a| a == "--background")) {
+        show_window(app, "about");
+    }
 }
 
 /// Show a window by label and bring it to the front.
