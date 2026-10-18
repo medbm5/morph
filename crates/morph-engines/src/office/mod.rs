@@ -181,7 +181,21 @@ pub fn libreoffice_convert(
         anyhow::anyhow!(morph_core::Error::ComponentMissing("libreoffice".into()))
     })?;
     // A private profile: no clash with a running LibreOffice, no first-run dialogs.
-    let profile = std::env::temp_dir().join(format!("morph-lo-profile-{}", std::process::id()));
+    // One per conversion: two LibreOffice instances can't share a profile, and the
+    // app runs jobs in parallel.
+    static NEXT: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+    let profile = std::env::temp_dir().join(format!(
+        "morph-lo-profile-{}-{}",
+        std::process::id(),
+        NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+    ));
+    struct Cleanup(PathBuf);
+    impl Drop for Cleanup {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+    let _cleanup = Cleanup(profile.clone());
     let profile_url = url_from_path(&profile);
     let mut c = Command::new(exe);
     quiet(&mut c)
@@ -208,7 +222,14 @@ pub fn libreoffice_convert(
                     use std::io::Read;
                     let _ = e.read_to_string(&mut err);
                 }
-                bail!("LibreOffice failed: {}", err.trim());
+                bail!(
+                    "LibreOffice failed ({status}){}",
+                    if err.trim().is_empty() {
+                        String::new()
+                    } else {
+                        format!(": {}", err.trim())
+                    }
+                );
             }
             break;
         }
