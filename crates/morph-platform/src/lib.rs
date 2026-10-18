@@ -10,6 +10,7 @@ pub mod actions;
 mod linux;
 #[cfg(target_os = "linux")]
 mod linux_clip;
+pub mod shell_menu;
 #[cfg(windows)]
 mod win;
 #[cfg(windows)]
@@ -103,6 +104,18 @@ pub fn trash(paths: &[PathBuf]) -> anyhow::Result<()> {
         return Ok(());
     }
     trash::delete_all(paths).map_err(|e| anyhow::anyhow!("moving to the trash: {e}"))
+}
+
+/// Selected items in the foreground file-manager window (Windows Explorer).
+pub fn selection_foreground() -> Vec<PathBuf> {
+    #[cfg(windows)]
+    {
+        win::selection_foreground().unwrap_or_default()
+    }
+    #[cfg(not(windows))]
+    {
+        Vec::new()
+    }
 }
 
 /// Open the containing folder with `path` selected.
