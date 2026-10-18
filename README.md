@@ -99,7 +99,7 @@ Reference mockup: `design/ring-mockup.html` (image ring, 7 segments, expanded mo
 | `--font-label` | Chakra Petch 400/500/600/700 | Labels, headings |
 | `--font-readout` | JetBrains Mono 400/500 | Numbers, file info, status |
 
-Fonts are **bundled as WOFF2** in the app (both SIL OFL 1.1; licences shipped in `app/assets/fonts/`). No font is ever fetched from the network.
+Fonts are **bundled as WOFF2** in the app (both SIL OFL 1.1; licences shipped in `app/ui/hud/fonts/`). No font is ever fetched from the network.
 
 The accent must keep ≥ 4.5:1 contrast for the centre label against `--hud-core`; the settings picker warns when a custom colour falls below that.
 
