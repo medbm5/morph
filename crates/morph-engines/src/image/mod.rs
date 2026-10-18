@@ -1,6 +1,8 @@
 //! Image engine: conversions between raster formats, SVG and HEIC input, and
 //! images → PDF.
 
+pub mod adjust;
+pub mod compose;
 pub mod compress;
 pub mod crop;
 pub mod decode;
@@ -9,6 +11,7 @@ pub mod heif;
 pub mod metadata;
 pub mod pdf_out;
 pub mod tools;
+pub mod tools2;
 
 use anyhow::Result;
 use encode::EncodeOptions;
@@ -74,6 +77,7 @@ pub fn register(reg: &mut Registry) {
     }
 
     tools::register(reg);
+    tools2::register(reg);
 
     reg.register(ToPdf {
         spec: OpSpec::convert("pdf", "PDF", INPUTS)

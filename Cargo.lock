@@ -2741,6 +2741,7 @@ dependencies = [
  "morph-core",
  "oxipng",
  "pdfium-render",
+ "rayon",
  "resvg",
  "serde",
  "serde_json",

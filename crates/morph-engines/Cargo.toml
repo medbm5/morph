@@ -10,7 +10,7 @@ rust-version.workspace = true
 
 [features]
 default = ["image", "pdf"]
-image = ["dep:image", "dep:webp", "dep:resvg", "dep:lopdf", "dep:oxipng", "dep:kamadak-exif", "dep:little_exif"]
+image = ["dep:image", "dep:webp", "dep:resvg", "dep:lopdf", "dep:oxipng", "dep:kamadak-exif", "dep:little_exif", "dep:rayon"]
 pdf = ["image", "dep:pdfium-render", "dep:docx-rs"]
 
 [dependencies]
@@ -27,6 +27,7 @@ pdfium-render = { version = "0.9", optional = true }
 oxipng = { version = "10", optional = true, default-features = false, features = ["parallel"] }
 kamadak-exif = { version = "0.6", optional = true }
 little_exif = { version = "0.6", optional = true }
+rayon = { version = "1", optional = true }
 docx-rs = { version = "0.4", optional = true }
 flate2 = "1"
 
