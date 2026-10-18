@@ -1,0 +1,137 @@
+/* Metamorphosis HUD — ring component and motion.
+   Only transform and opacity animate; glow is one drop-shadow on the segment group. */
+
+.hud { position: relative; color: var(--hud-text); font-family: var(--font-label); }
+.hud-svg { display: block; width: 100%; height: auto; overflow: visible; }
+
+/* ---------- Decorative layers ---------- */
+.hud-spin { transform-box: view-box; transform-origin: 50% 50%; }
+.hud-spin-slow { animation: hud-cw var(--hud-spin-slow) linear infinite; }
+.hud-spin-mid  { animation: hud-ccw var(--hud-spin-mid) linear infinite; }
+.hud-spin-fast { animation: hud-cw var(--hud-spin-fast) linear infinite; }
+@keyframes hud-cw  { to { transform: rotate(360deg); } }
+@keyframes hud-ccw { to { transform: rotate(-360deg); } }
+
+.hud-scan { animation: hud-scan var(--hud-scan) linear infinite; }
+@keyframes hud-scan { from { transform: translateY(-380px); } to { transform: translateY(260px); } }
+
+/* ---------- Segments ---------- */
+.hud-seg { cursor: pointer; outline: none; }
+.hud-seg path {
+  fill: var(--hud-line-7);
+  stroke: color-mix(in srgb, var(--hud-line) 65%, transparent);
+  stroke-width: 1.5;
+  transition: fill var(--hud-hover) ease, stroke var(--hud-hover) ease;
+}
+.hud-seg .hud-label {
+  fill: var(--hud-text); font-family: var(--font-label); font-weight: 600; font-size: 14px;
+  letter-spacing: 2px; text-transform: uppercase; pointer-events: none;
+}
+.hud-seg .hud-num { fill: var(--hud-muted); font-family: var(--font-readout); font-size: 9px; pointer-events: none; }
+.hud-seg .hud-badge { fill: var(--hud-muted); font-family: var(--font-readout); font-size: 7px; letter-spacing: 1px; pointer-events: none; }
+.hud-seg.is-hot path { fill: var(--hud-accent-28); stroke: var(--hud-accent); }
+.hud-seg.is-hot .hud-label { fill: #FFFFFF; }
+.hud-seg.is-hot .hud-badge { fill: var(--hud-accent); }
+.hud-seg.is-off path { stroke-dasharray: 4 4; }
+.hud-seg.is-off .hud-label { fill: var(--hud-muted); }
+.hud-seg:focus-visible path { stroke: #FFFFFF; stroke-width: 2.5; }
+.hud-glow { filter: var(--hud-glow); }
+.hud-noglow .hud-glow { filter: none; }
+
+/* ---------- Centre readout ---------- */
+.hud-cap, .hud-meta, .hud-hint { font-family: var(--font-readout); font-size: 10px; }
+.hud-cap { fill: var(--hud-muted); letter-spacing: 2px; }
+.hud-hint { fill: var(--hud-text); letter-spacing: 1px; }
+.hud-meta { fill: var(--hud-muted); }
+.hud-action { fill: var(--hud-accent); font-family: var(--font-label); font-weight: 700; font-size: 24px; letter-spacing: 3px; }
+.hud-ringname { fill: var(--hud-line); font-family: var(--font-readout); font-size: 9px; letter-spacing: 3px; }
+
+/* ---------- Boot-up: draw-in staggered outer → inner, one flicker at 120 ms ---------- */
+.hud-boot .hud-draw {
+  stroke-dasharray: 1; animation: hud-draw var(--hud-boot) ease-out both;
+  animation-delay: calc(var(--d, 0) * var(--hud-boot-stagger));
+}
+.hud-boot .hud-flicker { animation: hud-flicker 320ms steps(1, end) both; }
+.hud-boot .hud-seg .hud-label, .hud-boot .hud-seg .hud-num, .hud-boot .hud-center { animation: hud-fade 200ms ease-out 120ms both; }
+@keyframes hud-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+/* opacity 1 → 0.4 → 1 over 80 ms, starting at 120 ms */
+@keyframes hud-flicker { 0% { opacity: 0; } 37.5% { opacity: 1; } 45% { opacity: 0.4; } 62.5%, 100% { opacity: 1; } }
+@keyframes hud-fade { from { opacity: 0; } to { opacity: 1; } }
+
+/* ---------- Ring switch: old segments 0.9 + fade (100 ms), new ones draw in (160 ms) ---------- */
+.hud-segs { transform-box: view-box; transform-origin: 50% 50%; }
+.hud-switch-out .hud-segs { animation: hud-switch-out var(--hud-switch-out) ease-in both; }
+.hud-switch-in .hud-segs .hud-draw { stroke-dasharray: 1; animation: hud-draw var(--hud-switch-in) ease-out both; }
+.hud-switch-in .hud-segs .hud-label, .hud-switch-in .hud-segs .hud-num { animation: hud-fade var(--hud-switch-in) ease-out both; }
+@keyframes hud-switch-out { to { transform: scale(0.9); opacity: 0; } }
+
+/* ---------- Drop: collapse to a 6 px dot (180 ms ease-in), then one accent pulse (400 ms) ---------- */
+.hud-body { transform-box: view-box; transform-origin: 50% 50%; transition: transform var(--hud-collapse) ease-in, opacity var(--hud-collapse) ease-in; }
+.hud-collapsed .hud-body { transform: scale(0.02); opacity: 0; }
+.hud-pulse { fill: none; stroke: var(--hud-accent); stroke-width: 2; opacity: 0; transform-box: view-box; transform-origin: 50% 50%; }
+.hud-collapsed .hud-pulse { animation: hud-pulse var(--hud-pulse) ease-out var(--hud-collapse) both; }
+@keyframes hud-pulse { from { opacity: 1; transform: scale(0.05); } to { opacity: 0; transform: scale(1); } }
+.hud-dot { fill: var(--hud-accent); opacity: 0; }
+.hud-collapsed .hud-dot { opacity: 1; transition: opacity 80ms 120ms; }
+.hud-cancelled .hud-body, .hud-cancelled .hud-toast { opacity: 0; transition: opacity var(--hud-cancel); }
+
+/* ---------- Confirmation toast / progress card ---------- */
+.hud-toast {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  min-width: 220px; max-width: 92%; box-sizing: border-box;
+  padding: 0.55rem 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  background: var(--hud-core); border: 1px solid var(--hud-accent);
+  color: var(--hud-text); font-family: var(--font-readout); font-size: 12px; letter-spacing: 1px;
+  box-shadow: 0 0 18px color-mix(in srgb, var(--hud-accent) 35%, transparent);
+  opacity: 0; pointer-events: none; transition: opacity 150ms;
+}
+.hud-toast b { color: var(--hud-accent); font-family: var(--font-label); font-weight: 700; letter-spacing: 2px; }
+.hud-toast.is-on { opacity: 1; pointer-events: auto; }
+.hud-toast.is-error { border-color: var(--hud-danger); }
+.hud-toast.is-error b { color: var(--hud-danger); }
+.hud-toast .hud-bar { display: block; height: 2px; margin-top: 6px; background: var(--hud-line-25); }
+.hud-toast .hud-bar i { display: block; height: 100%; width: 100%; background: var(--hud-accent); transform-origin: 0 50%; transform: scaleX(var(--p, 0)); transition: transform 120ms linear; }
+.hud-toast .hud-links { display: flex; gap: 12px; margin-top: 6px; }
+.hud-toast button {
+  font: 500 10px var(--font-readout); letter-spacing: 1px; color: var(--hud-line);
+  background: none; border: 1px solid var(--hud-line-45); padding: 3px 8px; cursor: pointer;
+}
+.hud-toast button:hover, .hud-toast button:focus-visible { border-color: var(--hud-accent); color: var(--hud-accent); outline: none; }
+
+/* ---------- Reduced motion: no rotation, flicker, scan-line or collapse; 100 ms fades only.
+   Applied by the OS media query AND by .hud-reduced, which the app sets from the platform
+   setting (WebKitGTK doesn't always map GNOME's enable-animations to the media query). ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .hud-spin-slow, .hud-spin-mid, .hud-spin-fast, .hud-scan { animation: none; }
+  .hud-scan { display: none; }
+  .hud-boot .hud-draw, .hud-boot .hud-flicker, .hud-boot .hud-seg .hud-label, .hud-boot .hud-seg .hud-num, .hud-boot .hud-center,
+  .hud-switch-in .hud-segs .hud-draw, .hud-switch-in .hud-segs .hud-label, .hud-switch-in .hud-segs .hud-num { animation: hud-fade 100ms both; stroke-dasharray: none; }
+  .hud-switch-out .hud-segs { animation: none; opacity: 0; }
+  .hud-body { transition: opacity 100ms; }
+  .hud-collapsed .hud-body { transform: none; }
+  .hud-collapsed .hud-pulse { animation: none; }
+  .hud-collapsed .hud-dot { opacity: 0; }
+  .hud-seg path { transition: none; }
+}
+.hud-reduced .hud-spin-slow, .hud-reduced .hud-spin-mid, .hud-reduced .hud-spin-fast, .hud-reduced .hud-scan { animation: none; }
+.hud-reduced .hud-scan { display: none; }
+.hud-reduced.hud-boot .hud-draw, .hud-reduced.hud-boot .hud-flicker, .hud-reduced.hud-boot .hud-seg .hud-label,
+.hud-reduced.hud-boot .hud-seg .hud-num, .hud-reduced.hud-boot .hud-center,
+.hud-reduced.hud-switch-in .hud-segs .hud-draw, .hud-reduced.hud-switch-in .hud-segs .hud-label,
+.hud-reduced.hud-switch-in .hud-segs .hud-num { animation: hud-fade 100ms both; stroke-dasharray: none; }
+.hud-reduced.hud-switch-out .hud-segs { animation: none; opacity: 0; }
+.hud-reduced .hud-body { transition: opacity 100ms; }
+.hud-reduced.hud-collapsed .hud-body { transform: none; }
+.hud-reduced.hud-collapsed .hud-pulse { animation: none; }
+.hud-reduced.hud-collapsed .hud-dot { opacity: 0; }
+.hud-reduced .hud-seg path { transition: none; }
+
+/* ---------- Forced colours / Windows High Contrast: system colours, no glow ---------- */
+@media (forced-colors: active) {
+  .hud-glow { filter: none; }
+  .hud-seg path { stroke: CanvasText; fill: Canvas; forced-color-adjust: none; }
+  .hud-seg.is-hot path { stroke: Highlight; fill: Highlight; }
+  .hud-seg .hud-label, .hud-action, .hud-cap, .hud-hint, .hud-meta, .hud-seg .hud-num { fill: CanvasText; }
+  .hud-seg.is-hot .hud-label { fill: HighlightText; }
+  .hud-toast { border-color: CanvasText; box-shadow: none; }
+}
