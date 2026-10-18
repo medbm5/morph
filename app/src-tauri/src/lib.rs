@@ -32,14 +32,25 @@ pub fn run() {
             commands::image_metadata,
             commands::image_size,
             commands::trace,
+            commands::compose_preview,
             expanded::expanded_request,
         ])
         .setup(|app| {
             tray::create(app.handle())?;
             overlay::create(app.handle())?;
             overlay::start_watcher(app.handle());
-            // Autostart launches with --background: stay in the tray.
-            if !std::env::args().any(|a| a == "--background") {
+            // `--open <op> <files…>` opens an operation's editor directly (file-manager
+            // entries and scripted screenshots); `--background` (autostart) stays in the tray.
+            let args: Vec<String> = std::env::args().collect();
+            if let Some(i) = args.iter().position(|a| a == "--open") {
+                if let Some(op) = args.get(i + 1) {
+                    let files: Vec<std::path::PathBuf> =
+                        args[i + 2..].iter().map(Into::into).collect();
+                    if let Err(e) = expanded::open(app.handle(), op, &files) {
+                        log::error!("--open {op}: {e:#}");
+                    }
+                }
+            } else if !args.iter().any(|a| a == "--background") {
                 show_window(app.handle(), "about");
             }
             Ok(())

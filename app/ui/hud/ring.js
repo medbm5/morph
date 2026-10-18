@@ -26,7 +26,10 @@
 
   const el = (name, attrs = {}, parent) => {
     const n = document.createElementNS(NS, name);
-    for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+    for (const [k, v] of Object.entries(attrs)) {
+      // CSSOM, not the attribute: the app's hashed CSP blocks inline style attributes.
+      if (k === 'style') n.style.cssText = v; else n.setAttribute(k, v);
+    }
     if (parent) parent.append(n);
     return n;
   };
@@ -280,7 +283,8 @@
     function progress(done, total, fraction, text) {
       clearTimeout(toastTimer);
       const p = Math.max(0, Math.min(1, fraction || 0));
-      toastEl.innerHTML = `<b>${esc(done)} OF ${esc(total)} SAVED</b>${text ? ' · ' + esc(text) : ''}<span class="hud-bar"><i style="--p:${p}"></i></span>`;
+      toastEl.innerHTML = `<b>${esc(done)} OF ${esc(total)} SAVED</b>${text ? ' · ' + esc(text) : ''}<span class="hud-bar"><i></i></span>`;
+      toastEl.querySelector('.hud-bar i').style.setProperty('--p', p);
       toastEl.classList.remove('is-error');
       toastEl.classList.add('is-on');
     }

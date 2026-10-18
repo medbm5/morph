@@ -325,3 +325,39 @@ pub fn image_size(path: PathBuf) -> Option<(u32, u32)> {
 pub fn trace(msg: String) {
     log::debug!("ui: {msg}");
 }
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Preview {
+    pub svg: String,
+    pub width: u32,
+    pub height: u32,
+    /// Files behind `morph:0`, `morph:1`… in the SVG.
+    pub sources: Vec<PathBuf>,
+}
+
+/// SVG preview of a composition (annotate, background, collage) — the same scene the export renders.
+#[tauri::command]
+pub async fn compose_preview(
+    op: String,
+    paths: Vec<PathBuf>,
+    params: Params,
+) -> Result<Preview, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let inputs: Vec<(PathBuf, Kind)> = paths
+            .iter()
+            .map(|p| detect(p).map(|k| (p.clone(), k)))
+            .collect::<Result<_, _>>()
+            .map_err(|e| e.to_string())?;
+        let (scene, sources) = morph_engines::image::tools2::preview(&op, &inputs, &params)
+            .map_err(|e| format!("{e:#}"))?;
+        Ok(Preview {
+            svg: scene.svg,
+            width: scene.width,
+            height: scene.height,
+            sources,
+        })
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}

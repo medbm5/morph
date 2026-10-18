@@ -14,6 +14,8 @@
     for (const [k, v] of Object.entries(attrs)) {
       if (k === 'class') n.className = v;
       else if (k === 'text') n.textContent = v;
+      // CSSOM, not the attribute: Tauri's CSP (hashed) blocks inline style attributes.
+      else if (k === 'style') n.style.cssText = v;
       else n.setAttribute(k, v);
     }
     kids.flat().forEach((k) => k != null && n.append(k));
