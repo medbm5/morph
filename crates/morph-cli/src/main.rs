@@ -1,17 +1,148 @@
 //! `morph` — every ring operation, from a shell.
 
-use clap::Parser;
+mod args;
+
+use anyhow::{bail, Context, Result};
+use clap::{Parser, Subcommand};
+use morph_core::{detect, Job, JobEvent, Kind, Registry, Ring, Runner};
+use std::io::IsTerminal;
+use std::path::PathBuf;
+use std::process::ExitCode;
 
 #[derive(Parser)]
 #[command(
     name = "morph",
     version = morph_core::VERSION,
     about = "Metamorphosis — convert and edit files without touching the original",
-    long_about = None
+    after_help = "Examples:\n  morph convert --to jpg file.pdf\n  morph convert --to webp *.png\n  morph list --for clip.mov"
 )]
-struct Cli {}
+struct Cli {
+    #[command(subcommand)]
+    command: Command,
+}
 
-fn main() -> anyhow::Result<()> {
-    let _cli = Cli::parse();
+#[derive(Subcommand)]
+enum Command {
+    /// Convert files to another format, saved beside each original.
+    #[command(disable_help_flag = true)]
+    Convert {
+        /// Target format (jpg, png, webp, pdf, mp3…).
+        #[arg(long)]
+        to: String,
+        /// Write outputs to this folder instead of beside each source.
+        #[arg(long)]
+        out_dir: Option<PathBuf>,
+        /// Files, then any format options (`--quality 80`, `--dpi 300`). Run
+        /// `morph list --for <file>` to see the options.
+        #[arg(trailing_var_arg = true, allow_hyphen_values = true, required = true)]
+        rest: Vec<String>,
+    },
+    /// List the operations available for some files.
+    List {
+        /// Files to check.
+        #[arg(long = "for", required = true, num_args = 1..)]
+        files: Vec<PathBuf>,
+        /// Only this ring (convert, tools, actions).
+        #[arg(long)]
+        ring: Option<String>,
+        /// Show parameters.
+        #[arg(long, short)]
+        verbose: bool,
+    },
+}
+
+fn main() -> ExitCode {
+    let cli = Cli::parse();
+    let registry = morph_engines::registry();
+    match run(cli, &registry) {
+        Ok(true) => ExitCode::SUCCESS,
+        Ok(false) => ExitCode::from(1),
+        Err(e) => {
+            eprintln!("morph: {e:#}");
+            ExitCode::from(2)
+        }
+    }
+}
+
+fn run(cli: Cli, registry: &Registry) -> Result<bool> {
+    match cli.command {
+        Command::Convert { to, out_dir, rest } => {
+            let to = canonical_ext(&to);
+            let op_id = format!("convert.{to}");
+            let op = registry.get(&op_id).with_context(|| format!("no conversion to .{to}"))?;
+            let (files, params) = args::split(&rest, op.spec())?;
+            run_job(registry, Job { op: op_id, inputs: files, params, out_dir })
+        }
+        Command::List { files, ring, verbose } => {
+            list(registry, &files, ring.as_deref(), verbose)?;
+            Ok(true)
+        }
+    }
+}
+
+/// Map common aliases to our canonical extensions.
+pub fn canonical_ext(s: &str) -> String {
+    let s = s.trim_start_matches('.').to_ascii_lowercase();
+    match s.as_str() {
+        "jpeg" | "jpe" => "jpg".into(),
+        "tif" => "tiff".into(),
+        "markdown" => "md".into(),
+        "htm" => "html".into(),
+        "text" => "txt".into(),
+        "aif" => "aiff".into(),
+        _ => s,
+    }
+}
+
+pub fn run_job(registry: &Registry, job: Job) -> Result<bool> {
+    let fancy = std::io::stderr().is_terminal();
+    let runner = Runner::new(registry);
+    let report = runner.run(&job, move |ev| match ev {
+        JobEvent::Saved { path } => println!("✓ SAVED · {}", path.display()),
+        JobEvent::Failed { input, error } => match input {
+            Some(p) => eprintln!("✗ {}: {error}", p.display()),
+            None => eprintln!("✗ {error}"),
+        },
+        JobEvent::Progress { fraction, item, total, .. } if fancy => {
+            eprint!("\r{:>3}%  {}/{}  ", (fraction * 100.0) as u32, (item + 1).min(total), total);
+        }
+        JobEvent::Finished { .. } if fancy => eprint!("\r                    \r"),
+        _ => {}
+    })?;
+    if report.cancelled {
+        bail!("cancelled");
+    }
+    Ok(report.errors.is_empty())
+}
+
+fn list(registry: &Registry, files: &[PathBuf], ring: Option<&str>, verbose: bool) -> Result<()> {
+    let files = args::expand(files.iter().map(|p| p.to_string_lossy().into_owned()))?;
+    let kinds: Vec<Kind> = files
+        .iter()
+        .map(|f| detect(f).with_context(|| format!("reading {}", f.display())))
+        .collect::<Result<_>>()?;
+    let labels: Vec<_> = kinds.iter().map(Kind::label).collect();
+    println!("{} file(s): {}", files.len(), labels.join(", "));
+    let rings = match ring {
+        Some(r) => vec![Ring::parse(r).with_context(|| format!("unknown ring `{r}`"))?],
+        None => vec![Ring::Convert, Ring::Tools, Ring::Actions],
+    };
+    for ring in rings {
+        let ops = registry.for_selection(&kinds, ring);
+        if ops.is_empty() {
+            continue;
+        }
+        println!("\n{}", format!("{ring:?}").to_uppercase());
+        for op in ops {
+            let s = op.spec();
+            let note = if op.available() { "" } else { "  (INSTALL COMPONENT)" };
+            println!("  {:<22} {}{note}", s.id, s.label);
+            if verbose {
+                for p in &s.params {
+                    println!("      --{:<16} {} [default: {}]", p.key, p.label, p.default);
+                }
+            }
+        }
+    }
     Ok(())
 }
