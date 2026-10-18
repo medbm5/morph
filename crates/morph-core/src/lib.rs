@@ -15,6 +15,7 @@ pub mod output;
 pub mod progress;
 pub mod recipe;
 pub mod registry;
+pub mod settings;
 
 pub use chain::Step;
 pub use job::{Job, JobEvent, JobReport, Runner};
@@ -24,6 +25,7 @@ pub use op::{Arity, OpContext, OpSpec, Operation, OutputKind, ParamKind, ParamSp
 pub use output::OutputSink;
 pub use progress::Progress;
 pub use registry::Registry;
+pub use settings::Settings;
 
 /// Version shared by the CLI and the app.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

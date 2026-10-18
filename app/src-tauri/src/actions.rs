@@ -106,7 +106,7 @@ fn move_to(app: &AppHandle, paths: &[PathBuf]) -> Result<Vec<PathBuf>> {
     else {
         anyhow::bail!(morph_core::Error::Cancelled);
     };
-    let naming = morph_core::Naming::default();
+    let naming = morph_core::Settings::load().naming;
     let mut out = Vec::new();
     for p in paths {
         let name = p

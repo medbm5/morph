@@ -112,8 +112,9 @@ pub fn ring_items(
         return Err("unreadable selection".into());
     }
     let registry = state.registry();
-    let naming = morph_core::Naming::default();
-    let items = registry
+    let settings = state.settings();
+    let naming = settings.naming.clone();
+    let items: Vec<Item> = registry
         .for_selection(&kinds, ring_of(ring))
         .into_iter()
         .map(|op| {
@@ -140,6 +141,12 @@ pub fn ring_items(
             }
         })
         .collect();
+    // The user's layout for this ring and family (when the selection is one family).
+    let family = kinds[0].family;
+    let items = match settings.layout(ring_of(ring), family) {
+        Some(l) if kinds.iter().all(|k| k.family == family) => l.apply(items, |i| &i.id),
+        _ => items,
+    };
     let mut file = file_info(&paths, &kinds);
     if kinds.len() == 1 && kinds[0].family == Family::Image {
         file.dim = image_dims(&paths[0]);
@@ -176,10 +183,11 @@ pub fn run_op(
     let cancel = Arc::new(AtomicBool::new(false));
     state.jobs.lock().unwrap().insert(id, cancel.clone());
     let registry = state.registry();
+    let settings = state.settings();
     std::thread::Builder::new()
         .name(format!("morph-job-{id}"))
         .spawn(move || {
-            let mut runner = Runner::new(&registry);
+            let mut runner = Runner::new(&registry).naming(settings.naming.clone());
             runner.cancel = cancel;
             let job = Job {
                 op,
@@ -195,7 +203,7 @@ pub fn run_op(
             let is_action = registry
                 .get(&job.op)
                 .is_some_and(|o| o.spec().ring == Ring::Actions);
-            if let (Ok(report), false) = (&result, is_action) {
+            if let (Ok(report), false, true) = (&result, is_action, settings.history) {
                 if !report.outputs.is_empty() {
                     let label = registry
                         .get(&job.op)

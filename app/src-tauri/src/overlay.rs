@@ -106,7 +106,8 @@ pub fn start_watcher(app: &AppHandle) {
     let sink: morph_input_watch::Sink = std::sync::Arc::new(move |a| {
         let _ = tx.send(a);
     });
-    match morph_input_watch::start(Default::default(), sink) {
+    let triggers = crate::settings::triggers(&app.state::<AppState>().settings());
+    match morph_input_watch::start(triggers, sink) {
         Ok(watch) => {
             log::info!("input watcher started");
             *app.state::<AppState>().watch.lock().unwrap() = Some(watch);
@@ -183,7 +184,10 @@ fn handle(app: &AppHandle, action: Action) {
             let payload = OpenPayload {
                 ring,
                 paths,
-                reduced: morph_platform::reduced_motion(),
+                reduced: state
+                    .settings()
+                    .motion
+                    .reduced(morph_platform::reduced_motion()),
                 compositor: morph_platform::has_compositor(),
             };
             let _ = app.emit_to(LABEL, "ring://open", payload);

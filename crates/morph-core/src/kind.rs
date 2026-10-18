@@ -82,7 +82,7 @@ impl Kind {
 
 /// Canonical (mime, ext, family) for extensions we know, including the ones
 /// magic bytes can't tell apart (text formats, OOXML containers).
-fn by_extension(ext: &str) -> Option<Kind> {
+pub fn by_extension(ext: &str) -> Option<Kind> {
     use Family::*;
     let (mime, canon, family) = match ext {
         "jpg" | "jpeg" | "jpe" | "jfif" => ("image/jpeg", "jpg", Image),

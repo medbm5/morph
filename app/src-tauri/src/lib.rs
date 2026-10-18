@@ -9,6 +9,7 @@ mod integration;
 mod linux_shape;
 mod logger;
 mod overlay;
+mod settings;
 mod state;
 mod tray;
 
@@ -63,6 +64,14 @@ pub fn run() {
             actions::float_drag_out,
             expanded::expanded_request,
             dock::dock_expand,
+            settings::get_settings,
+            settings::set_settings,
+            settings::get_look,
+            settings::layout_ops,
+            settings::layout_key_for,
+            settings::portable_status,
+            settings::set_portable,
+            settings::open_settings,
         ])
         .setup(|app| {
             // The registry needs the app handle (actions use its windows).
@@ -71,6 +80,7 @@ pub fn run() {
             overlay::create(app.handle())?;
             overlay::start_watcher(app.handle());
             integration::install_once(app.handle());
+            settings::apply(app.handle(), &app.state::<AppState>().settings(), false);
             let args: Vec<String> = std::env::args().collect();
             handle_args(app.handle(), &args, true);
             Ok(())

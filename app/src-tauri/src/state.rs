@@ -1,6 +1,6 @@
 //! Shared app state.
 
-use morph_core::Registry;
+use morph_core::{Registry, Settings};
 use morph_input_watch::{RingKind, Watch};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex, RwLock};
@@ -14,6 +14,7 @@ pub struct AppState {
     pub ring_size: Mutex<f64>,
     /// Cancel flags of running jobs.
     pub jobs: Mutex<std::collections::HashMap<u64, Arc<std::sync::atomic::AtomicBool>>>,
+    pub settings: RwLock<Settings>,
 }
 
 /// The ring currently on screen.
@@ -35,7 +36,12 @@ impl AppState {
             ring: Mutex::new(RingSession::default()),
             ring_size: Mutex::new(560.0),
             jobs: Mutex::new(Default::default()),
+            settings: RwLock::new(Settings::load()),
         }
+    }
+
+    pub fn settings(&self) -> Settings {
+        self.settings.read().unwrap().clone()
     }
 
     pub fn registry(&self) -> Arc<Registry> {
