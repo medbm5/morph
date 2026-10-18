@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.9.0.schema.json
+PackageIdentifier: {OWNER}.Metamorphosis
+PackageVersion: {VERSION}
+PackageLocale: en-US
+Publisher: {OWNER}
+PublisherUrl: https://github.com/{OWNER}
+PackageName: Metamorphosis
+PackageUrl: https://{OWNER}.github.io/morph/
+License: MIT OR Apache-2.0
+LicenseUrl: https://github.com/{OWNER}/morph/blob/main/LICENSE-MIT
+ShortDescription: Drag a file, tap a key, drop it on the ring to convert or edit it. Offline.
+Description: Metamorphosis converts and edits files from a holographic ring that opens under your cursor mid-drag. Images, PDFs, video, audio, documents and archives; everything runs offline and originals are never modified.
+Moniker: morph
+Tags:
+  - converter
+  - image
+  - pdf
+  - video
+  - offline
+ReleaseNotesUrl: https://github.com/{OWNER}/morph/releases/tag/v{VERSION}
+ManifestType: defaultLocale
+ManifestVersion: 1.9.0
