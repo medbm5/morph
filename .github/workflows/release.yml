@@ -1,0 +1,62 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            bundles: msi,nsis
+            cli: morph.exe
+            cli_asset: morph-windows-x86_64.exe
+          - os: ubuntu-22.04
+            bundles: appimage,deb
+            cli: morph
+            cli_asset: morph-linux-x86_64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Linux system libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev \
+            libxdo-dev libssl-dev libx11-dev libxi-dev libxext-dev libxcb1-dev
+      - name: Install Tauri CLI
+        working-directory: app
+        run: npm ci
+      - name: Build app and publish installers
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: app
+          tauriScript: npx tauri
+          args: --bundles ${{ matrix.bundles }}
+          tagName: ${{ github.ref_name }}
+          releaseName: Metamorphosis ${{ github.ref_name }}
+          releaseBody: See the assets below to install Metamorphosis on Windows or Linux.
+          releaseDraft: false
+      - name: Build morph CLI
+        run: cargo build --release -p morph-cli
+      - name: Upload morph CLI
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cp target/release/${{ matrix.cli }} ${{ matrix.cli_asset }}
+          gh release upload "${{ github.ref_name }}" ${{ matrix.cli_asset }} --clobber
