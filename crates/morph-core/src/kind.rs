@@ -33,7 +33,11 @@ pub struct Kind {
 
 impl Kind {
     pub fn new(mime: &str, ext: &str, family: Family) -> Self {
-        Self { mime: mime.into(), ext: ext.into(), family }
+        Self {
+            mime: mime.into(),
+            ext: ext.into(),
+            family,
+        }
     }
 
     pub fn folder() -> Self {
@@ -106,7 +110,11 @@ fn by_extension(ext: &str) -> Option<Kind> {
         "opus" => ("audio/opus", "opus", Audio),
         "aif" | "aiff" => ("audio/aiff", "aiff", Audio),
         "wma" => ("audio/x-ms-wma", "wma", Audio),
-        "docx" => ("application/vnd.openxmlformats-officedocument.wordprocessingml.document", "docx", Document),
+        "docx" => (
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "docx",
+            Document,
+        ),
         "doc" => ("application/msword", "doc", Document),
         "odt" => ("application/vnd.oasis.opendocument.text", "odt", Document),
         "rtf" => ("application/rtf", "rtf", Document),
@@ -115,13 +123,29 @@ fn by_extension(ext: &str) -> Option<Kind> {
         "html" | "htm" => ("text/html", "html", Document),
         "epub" => ("application/epub+zip", "epub", Document),
         "pages" => ("application/vnd.apple.pages", "pages", Document),
-        "pptx" => ("application/vnd.openxmlformats-officedocument.presentationml.presentation", "pptx", Slides),
+        "pptx" => (
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            "pptx",
+            Slides,
+        ),
         "ppt" => ("application/vnd.ms-powerpoint", "ppt", Slides),
-        "odp" => ("application/vnd.oasis.opendocument.presentation", "odp", Slides),
+        "odp" => (
+            "application/vnd.oasis.opendocument.presentation",
+            "odp",
+            Slides,
+        ),
         "key" => ("application/vnd.apple.keynote", "key", Slides),
-        "xlsx" => ("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "xlsx", Spreadsheet),
+        "xlsx" => (
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "xlsx",
+            Spreadsheet,
+        ),
         "xls" => ("application/vnd.ms-excel", "xls", Spreadsheet),
-        "ods" => ("application/vnd.oasis.opendocument.spreadsheet", "ods", Spreadsheet),
+        "ods" => (
+            "application/vnd.oasis.opendocument.spreadsheet",
+            "ods",
+            Spreadsheet,
+        ),
         "csv" => ("text/csv", "csv", Spreadsheet),
         "tsv" => ("text/tab-separated-values", "tsv", Spreadsheet),
         "srt" => ("application/x-subrip", "srt", Subtitle),
@@ -260,7 +284,12 @@ mod tests {
     #[test]
     fn extension_fallback_for_text_formats() {
         let d = tempfile::tempdir().unwrap();
-        let k = detect(&write(d.path(), "subs.srt", b"1\n00:00:01,000 --> 00:00:02,000\nHi\n")).unwrap();
+        let k = detect(&write(
+            d.path(),
+            "subs.srt",
+            b"1\n00:00:01,000 --> 00:00:02,000\nHi\n",
+        ))
+        .unwrap();
         assert_eq!(k.family, Family::Subtitle);
         let k = detect(&write(d.path(), "notes.md", b"# Title\n")).unwrap();
         assert_eq!(k.ext, "md");
@@ -269,7 +298,12 @@ mod tests {
     #[test]
     fn svg_without_extension() {
         let d = tempfile::tempdir().unwrap();
-        let k = detect(&write(d.path(), "logo", b"<?xml version=\"1.0\"?><svg xmlns=\"http://www.w3.org/2000/svg\"/>")).unwrap();
+        let k = detect(&write(
+            d.path(),
+            "logo",
+            b"<?xml version=\"1.0\"?><svg xmlns=\"http://www.w3.org/2000/svg\"/>",
+        ))
+        .unwrap();
         assert_eq!(k.ext, "svg");
     }
 

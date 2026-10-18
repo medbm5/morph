@@ -30,13 +30,21 @@ pub fn split(rest: &[String], spec: &OpSpec) -> Result<(Vec<PathBuf>, Params)> {
             bail!(
                 "`{}` has no option --{key}{}",
                 spec.id,
-                if known.is_empty() { String::new() } else { format!(" (options: {})", known.join(", ")) }
+                if known.is_empty() {
+                    String::new()
+                } else {
+                    format!(" (options: {})", known.join(", "))
+                }
             );
         };
         let raw = match (inline, &p.kind) {
             (Some(v), _) => v,
             // Bare boolean flag.
-            (None, ParamKind::Bool) if it.peek().is_none_or(|n| n.starts_with("--") || !is_bool(n)) => "true".into(),
+            (None, ParamKind::Bool)
+                if it.peek().is_none_or(|n| n.starts_with("--") || !is_bool(n)) =>
+            {
+                "true".into()
+            }
             (None, _) => match it.next() {
                 Some(v) => v.clone(),
                 None => bail!("--{key} needs a value"),
@@ -51,26 +59,36 @@ pub fn split(rest: &[String], spec: &OpSpec) -> Result<(Vec<PathBuf>, Params)> {
 }
 
 fn is_bool(s: &str) -> bool {
-    matches!(s.to_ascii_lowercase().as_str(), "true" | "false" | "yes" | "no" | "on" | "off" | "1" | "0")
+    matches!(
+        s.to_ascii_lowercase().as_str(),
+        "true" | "false" | "yes" | "no" | "on" | "off" | "1" | "0"
+    )
 }
 
 fn coerce(raw: &str, kind: &ParamKind) -> Result<Value> {
     Ok(match kind {
         ParamKind::Int { min, max } => {
-            let v: i64 = raw.parse().map_err(|_| anyhow::anyhow!("`{raw}` is not a whole number"))?;
+            let v: i64 = raw
+                .parse()
+                .map_err(|_| anyhow::anyhow!("`{raw}` is not a whole number"))?;
             if v < *min || v > *max {
                 bail!("{v} is outside {min}–{max}");
             }
             v.into()
         }
         ParamKind::Float { min, max, .. } => {
-            let v: f64 = raw.parse().map_err(|_| anyhow::anyhow!("`{raw}` is not a number"))?;
+            let v: f64 = raw
+                .parse()
+                .map_err(|_| anyhow::anyhow!("`{raw}` is not a number"))?;
             if v < *min || v > *max {
                 bail!("{v} is outside {min}–{max}");
             }
             v.into()
         }
-        ParamKind::Bool => Value::Bool(matches!(raw.to_ascii_lowercase().as_str(), "true" | "yes" | "on" | "1")),
+        ParamKind::Bool => Value::Bool(matches!(
+            raw.to_ascii_lowercase().as_str(),
+            "true" | "yes" | "on" | "1"
+        )),
         ParamKind::Choice { options } => {
             let lower = raw.to_ascii_lowercase();
             match options.iter().find(|o| o.to_ascii_lowercase() == lower) {

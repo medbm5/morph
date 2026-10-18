@@ -23,7 +23,9 @@ pub fn data_dir() -> PathBuf {
     if let Some(dir) = portable_dir() {
         return dir.join("data");
     }
-    dirs::data_local_dir().unwrap_or_else(std::env::temp_dir).join("morph")
+    dirs::data_local_dir()
+        .unwrap_or_else(std::env::temp_dir)
+        .join("morph")
 }
 
 /// Per-user config folder (`%APPDATA%\morph`, `~/.config/morph`).
@@ -31,7 +33,9 @@ pub fn config_dir() -> PathBuf {
     if let Some(dir) = portable_dir() {
         return dir.join("config");
     }
-    dirs::config_dir().unwrap_or_else(std::env::temp_dir).join("morph")
+    dirs::config_dir()
+        .unwrap_or_else(std::env::temp_dir)
+        .join("morph")
 }
 
 /// The executable's folder when running in portable mode.
@@ -69,7 +73,10 @@ pub fn find_tool(component: &str, exe: &str) -> Option<PathBuf> {
             return Some(cand);
         }
     }
-    if let Some(dir) = std::env::current_exe().ok().and_then(|e| e.parent().map(Path::to_path_buf)) {
+    if let Some(dir) = std::env::current_exe()
+        .ok()
+        .and_then(|e| e.parent().map(Path::to_path_buf))
+    {
         for cand in [dir.join(&file), dir.join("sidecars").join(&file)] {
             if cand.is_file() {
                 return Some(cand);
@@ -83,6 +90,8 @@ pub fn find_tool(component: &str, exe: &str) -> Option<PathBuf> {
 pub fn find_on_path(exe: &str) -> Option<PathBuf> {
     let file = exe_name(exe);
     std::env::var_os("PATH").and_then(|paths| {
-        std::env::split_paths(&paths).map(|d| d.join(&file)).find(|p| p.is_file())
+        std::env::split_paths(&paths)
+            .map(|d| d.join(&file))
+            .find(|p| p.is_file())
     })
 }

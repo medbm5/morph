@@ -26,7 +26,12 @@ pub struct Job {
 
 impl Job {
     pub fn new(op: &str, inputs: Vec<PathBuf>) -> Self {
-        Self { op: op.into(), inputs, params: Params::new(), out_dir: None }
+        Self {
+            op: op.into(),
+            inputs,
+            params: Params::new(),
+            out_dir: None,
+        }
     }
     pub fn params(mut self, p: Params) -> Self {
         self.params = p;
@@ -39,12 +44,29 @@ impl Job {
 #[serde(tag = "event", rename_all = "camelCase")]
 pub enum JobEvent {
     /// `total` units of work (files for per-file ops, 1 for whole-selection ops).
-    Started { op: String, total: usize },
+    Started {
+        op: String,
+        total: usize,
+    },
     /// Overall fraction 0–1 and the item being processed.
-    Progress { fraction: f32, item: usize, total: usize, message: Option<String> },
-    Saved { path: PathBuf },
-    Failed { input: Option<PathBuf>, error: String },
-    Finished { saved: usize, failed: usize, cancelled: bool },
+    Progress {
+        fraction: f32,
+        item: usize,
+        total: usize,
+        message: Option<String>,
+    },
+    Saved {
+        path: PathBuf,
+    },
+    Failed {
+        input: Option<PathBuf>,
+        error: String,
+    },
+    Finished {
+        saved: usize,
+        failed: usize,
+        cancelled: bool,
+    },
 }
 
 /// Outcome of a job.
@@ -71,7 +93,11 @@ pub struct Runner<'r> {
 
 impl<'r> Runner<'r> {
     pub fn new(registry: &'r Registry) -> Self {
-        Self { registry, naming: Naming::default(), cancel: Arc::new(AtomicBool::new(false)) }
+        Self {
+            registry,
+            naming: Naming::default(),
+            cancel: Arc::new(AtomicBool::new(false)),
+        }
     }
 
     pub fn naming(mut self, naming: Naming) -> Self {
@@ -80,36 +106,65 @@ impl<'r> Runner<'r> {
     }
 
     /// Run `job`, calling `on_event` from this thread as work progresses.
-    pub fn run(&self, job: &Job, on_event: impl Fn(JobEvent) + Send + Sync + 'static) -> Result<JobReport, Error> {
-        let op = self.registry.get(&job.op).ok_or_else(|| Error::UnknownOp(job.op.clone()))?;
+    pub fn run(
+        &self,
+        job: &Job,
+        on_event: impl Fn(JobEvent) + Send + Sync + 'static,
+    ) -> Result<JobReport, Error> {
+        let op = self
+            .registry
+            .get(&job.op)
+            .ok_or_else(|| Error::UnknownOp(job.op.clone()))?;
         let spec = op.spec();
         if job.inputs.is_empty() {
             return Err(Error::NoInputs);
         }
         if !op.available() {
-            return Err(Error::ComponentMissing(spec.component.clone().unwrap_or_else(|| spec.id.clone())));
+            return Err(Error::ComponentMissing(
+                spec.component.clone().unwrap_or_else(|| spec.id.clone()),
+            ));
         }
 
         let mut kinds = Vec::with_capacity(job.inputs.len());
         for p in &job.inputs {
             let k = detect(p).map_err(|e| Error::Io(p.clone(), e))?;
             if !spec.accepts_kind(&k) {
-                return Err(Error::Unsupported { op: spec.id.clone(), path: p.clone(), kind: k.label() });
+                return Err(Error::Unsupported {
+                    op: spec.id.clone(),
+                    path: p.clone(),
+                    kind: k.label(),
+                });
             }
             kinds.push(k);
         }
 
         let params = job.params.clone().merged_over(&spec.default_params());
-        let sink = OutputSink::new(self.naming.clone(), spec.suffix.clone(), job.out_dir.clone());
+        let sink = OutputSink::new(
+            self.naming.clone(),
+            spec.suffix.clone(),
+            job.out_dir.clone(),
+        );
         let groups: Vec<(Vec<PathBuf>, Vec<Kind>)> = match spec.arity {
-            Arity::Each => job.inputs.iter().cloned().zip(kinds).map(|(p, k)| (vec![p], vec![k])).collect(),
+            Arity::Each => job
+                .inputs
+                .iter()
+                .cloned()
+                .zip(kinds)
+                .map(|(p, k)| (vec![p], vec![k]))
+                .collect(),
             Arity::All => vec![(job.inputs.clone(), kinds)],
         };
         let total = groups.len();
         let on_event = Arc::new(on_event);
-        on_event(JobEvent::Started { op: spec.id.clone(), total });
+        on_event(JobEvent::Started {
+            op: spec.id.clone(),
+            total,
+        });
 
-        let mut report = JobReport { op: spec.id.clone(), ..Default::default() };
+        let mut report = JobReport {
+            op: spec.id.clone(),
+            ..Default::default()
+        };
         for (i, (inputs, kinds)) in groups.into_iter().enumerate() {
             if self.cancel.load(std::sync::atomic::Ordering::Relaxed) {
                 report.cancelled = true;
@@ -126,23 +181,39 @@ impl<'r> Runner<'r> {
             });
             let first = inputs.first().cloned();
             let before = sink.saved().len();
-            let ctx = OpContext { inputs, kinds, params: params.clone(), sink: &sink, progress: &progress };
+            let ctx = OpContext {
+                inputs,
+                kinds,
+                params: params.clone(),
+                sink: &sink,
+                progress: &progress,
+            };
             match op.run(&ctx) {
                 Ok(paths) => {
                     // Prefer what the op returned; fall back to what it committed.
-                    let paths = if paths.is_empty() { sink.saved()[before..].to_vec() } else { paths };
+                    let paths = if paths.is_empty() {
+                        sink.saved()[before..].to_vec()
+                    } else {
+                        paths
+                    };
                     for p in paths {
                         on_event(JobEvent::Saved { path: p.clone() });
                         report.outputs.push(p);
                     }
                 }
-                Err(e) if e.downcast_ref::<Error>().is_some_and(|e| matches!(e, Error::Cancelled)) => {
+                Err(e)
+                    if e.downcast_ref::<Error>()
+                        .is_some_and(|e| matches!(e, Error::Cancelled)) =>
+                {
                     report.cancelled = true;
                     break;
                 }
                 Err(e) => {
                     let msg = format!("{e:#}");
-                    on_event(JobEvent::Failed { input: first.clone(), error: msg.clone() });
+                    on_event(JobEvent::Failed {
+                        input: first.clone(),
+                        error: msg.clone(),
+                    });
                     report.errors.push((first, msg));
                 }
             }

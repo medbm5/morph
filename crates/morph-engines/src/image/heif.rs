@@ -58,9 +58,15 @@ fn decode_with_sidecar(path: &Path) -> Result<DynamicImage> {
     } else {
         cmd.arg(path).arg(&out);
     }
-    let res = cmd.output().with_context(|| format!("running {}", tool.display()))?;
+    let res = cmd
+        .output()
+        .with_context(|| format!("running {}", tool.display()))?;
     if !res.status.success() || !out.exists() {
-        bail!("{} failed: {}", tool.display(), String::from_utf8_lossy(&res.stderr).trim());
+        bail!(
+            "{} failed: {}",
+            tool.display(),
+            String::from_utf8_lossy(&res.stderr).trim()
+        );
     }
     // heif-dec applies the HEIF transform properties (rotation/mirror) itself.
     let img = image::open(&out).context("reading heif-dec output")?;
@@ -69,7 +75,11 @@ fn decode_with_sidecar(path: &Path) -> Result<DynamicImage> {
 }
 
 fn tempfile_dir() -> Result<std::path::PathBuf> {
-    let d = std::env::temp_dir().join(format!("morph-heif-{}-{}", std::process::id(), rand_suffix()));
+    let d = std::env::temp_dir().join(format!(
+        "morph-heif-{}-{}",
+        std::process::id(),
+        rand_suffix()
+    ));
     std::fs::create_dir_all(&d)?;
     Ok(d)
 }
@@ -113,13 +123,16 @@ mod wic {
             let frame = decoder.GetFrame(0).context("reading first frame")?;
             let orientation = read_orientation(&frame).unwrap_or(1);
             let source: IWICBitmapSource = frame.into();
-            let converted = WICConvertBitmapSource(&GUID_WICPixelFormat32bppRGBA as *const GUID, &source)
-                .context("converting to RGBA")?;
+            let converted =
+                WICConvertBitmapSource(&GUID_WICPixelFormat32bppRGBA as *const GUID, &source)
+                    .context("converting to RGBA")?;
             let (mut w, mut h) = (0u32, 0u32);
             converted.GetSize(&mut w, &mut h)?;
             let stride = w * 4;
             let mut buf = vec![0u8; (stride * h) as usize];
-            converted.CopyPixels(std::ptr::null(), stride, &mut buf).context("copying pixels")?;
+            converted
+                .CopyPixels(std::ptr::null(), stride, &mut buf)
+                .context("copying pixels")?;
             let img = RgbaImage::from_raw(w, h, buf).context("pixel buffer")?;
             let mut img = DynamicImage::ImageRgba8(img);
             if let Some(o) = image::metadata::Orientation::from_exif(orientation) {
@@ -131,9 +144,14 @@ mod wic {
 
     unsafe fn read_orientation(frame: &IWICBitmapFrameDecode) -> Option<u8> {
         let reader = frame.GetMetadataQueryReader().ok()?;
-        let name: Vec<u16> = "System.Photo.Orientation".encode_utf16().chain(Some(0)).collect();
+        let name: Vec<u16> = "System.Photo.Orientation"
+            .encode_utf16()
+            .chain(Some(0))
+            .collect();
         let mut value = windows::Win32::System::Com::StructuredStorage::PROPVARIANT::default();
-        reader.GetMetadataByName(PCWSTR(name.as_ptr()), &mut value).ok()?;
+        reader
+            .GetMetadataByName(PCWSTR(name.as_ptr()), &mut value)
+            .ok()?;
         let v = u16::try_from(&value).ok()?;
         u8::try_from(v).ok()
     }

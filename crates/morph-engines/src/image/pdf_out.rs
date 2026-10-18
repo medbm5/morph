@@ -25,7 +25,12 @@ pub enum PageSize {
     Letter { margin: f32 },
 }
 
-pub fn images_to_pdf(inputs: &[(PathBuf, Kind)], out: &Path, size: PageSize, progress: &Progress) -> Result<()> {
+pub fn images_to_pdf(
+    inputs: &[(PathBuf, Kind)],
+    out: &Path,
+    size: PageSize,
+    progress: &Progress,
+) -> Result<()> {
     let mut doc = Document::with_version("1.7");
     let pages_id = doc.new_object_id();
     let mut kids = Vec::new();
@@ -39,7 +44,10 @@ pub fn images_to_pdf(inputs: &[(PathBuf, Kind)], out: &Path, size: PageSize, pro
         let content = Content {
             operations: vec![
                 PdfOp::new("q", vec![]),
-                PdfOp::new("cm", vec![dw.into(), 0.into(), 0.into(), dh.into(), x.into(), y.into()]),
+                PdfOp::new(
+                    "cm",
+                    vec![dw.into(), 0.into(), 0.into(), dh.into(), x.into(), y.into()],
+                ),
                 PdfOp::new("Do", vec!["Im0".into()]),
                 PdfOp::new("Q", vec![]),
             ],
@@ -80,7 +88,11 @@ fn layout(w: f32, h: f32, size: PageSize) -> (f32, f32, f32, f32, f32, f32) {
             (pw, ph, 0.0, 0.0, pw, ph)
         }
         PageSize::A4 { margin } | PageSize::Letter { margin } => {
-            let (a, b) = if matches!(size, PageSize::A4 { .. }) { (595.28, 841.89) } else { (612.0, 792.0) };
+            let (a, b) = if matches!(size, PageSize::A4 { .. }) {
+                (595.28, 841.89)
+            } else {
+                (612.0, 792.0)
+            };
             let (pw, ph) = if w > h { (b, a) } else { (a, b) };
             let s = ((pw - 2.0 * margin) / w).min((ph - 2.0 * margin) / h);
             let (dw, dh) = (w * s, h * s);
@@ -89,7 +101,11 @@ fn layout(w: f32, h: f32, size: PageSize) -> (f32, f32, f32, f32, f32, f32) {
     }
 }
 
-fn image_xobject(doc: &mut Document, path: &Path, kind: &Kind) -> Result<(lopdf::ObjectId, u32, u32)> {
+fn image_xobject(
+    doc: &mut Document,
+    path: &Path,
+    kind: &Kind,
+) -> Result<(lopdf::ObjectId, u32, u32)> {
     if kind.ext == "jpg" {
         if let Some(r) = jpeg_passthrough(doc, path)? {
             return Ok(r);
@@ -126,11 +142,16 @@ fn image_xobject(doc: &mut Document, path: &Path, kind: &Kind) -> Result<(lopdf:
 }
 
 /// Embed a baseline/progressive JPEG as-is when it needs no rotation.
-fn jpeg_passthrough(doc: &mut Document, path: &Path) -> Result<Option<(lopdf::ObjectId, u32, u32)>> {
+fn jpeg_passthrough(
+    doc: &mut Document,
+    path: &Path,
+) -> Result<Option<(lopdf::ObjectId, u32, u32)>> {
     use image::ImageDecoder;
     let bytes = std::fs::read(path)?;
     let mut dec = image::codecs::jpeg::JpegDecoder::new(std::io::Cursor::new(&bytes))?;
-    let orientation = dec.orientation().unwrap_or(image::metadata::Orientation::NoTransforms);
+    let orientation = dec
+        .orientation()
+        .unwrap_or(image::metadata::Orientation::NoTransforms);
     if orientation != image::metadata::Orientation::NoTransforms {
         return Ok(None);
     }

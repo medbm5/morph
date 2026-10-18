@@ -20,11 +20,20 @@ impl Default for Progress {
 
 impl Progress {
     pub fn silent() -> Self {
-        Self { callback: None, cancel: Arc::new(AtomicBool::new(false)) }
+        Self {
+            callback: None,
+            cancel: Arc::new(AtomicBool::new(false)),
+        }
     }
 
-    pub fn new(cancel: Arc<AtomicBool>, f: impl Fn(f32, Option<&str>) + Send + Sync + 'static) -> Self {
-        Self { callback: Some(Arc::new(f)), cancel }
+    pub fn new(
+        cancel: Arc<AtomicBool>,
+        f: impl Fn(f32, Option<&str>) + Send + Sync + 'static,
+    ) -> Self {
+        Self {
+            callback: Some(Arc::new(f)),
+            cancel,
+        }
     }
 
     pub fn set(&self, fraction: f32) {

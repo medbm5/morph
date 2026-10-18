@@ -65,7 +65,11 @@ fn every_input_to_every_output() {
             assert_eq!(report.outputs.len(), 1);
             let produced = &report.outputs[0];
             assert_eq!(produced.extension().unwrap(), out, "{in_ext} → {out}");
-            assert_eq!(produced.parent(), input.parent(), "saved beside the original");
+            assert_eq!(
+                produced.parent(),
+                input.parent(),
+                "saved beside the original"
+            );
             if out == "pdf" {
                 assert!(std::fs::read(produced).unwrap().starts_with(b"%PDF-"));
             } else if out != "avif" || morph_engines::image::heif::available() {
@@ -82,7 +86,8 @@ fn every_input_to_every_output() {
 fn second_run_numbers_the_output() {
     let dir = tempfile::tempdir().unwrap();
     let src = dir.path().join("photo.jpg");
-    morph_engines::image::encode::encode(&fixture_image(), "jpg", &src, &Default::default()).unwrap();
+    morph_engines::image::encode::encode(&fixture_image(), "jpg", &src, &Default::default())
+        .unwrap();
     let reg = morph_engines::registry();
     let runner = Runner::new(&reg);
     let job = Job::new("convert.png", vec![src.clone()]);
@@ -99,13 +104,21 @@ fn many_images_make_one_pdf_and_batches_convert_each() {
     let reg = morph_engines::registry();
     let runner = Runner::new(&reg);
 
-    let pdf = runner.run(&Job::new("convert.pdf", inputs.clone()), |_| {}).unwrap();
+    let pdf = runner
+        .run(&Job::new("convert.pdf", inputs.clone()), |_| {})
+        .unwrap();
     assert_eq!(pdf.outputs.len(), 1);
     let doc = lopdf::Document::load(&pdf.outputs[0]).unwrap();
     assert_eq!(doc.get_pages().len(), inputs.len());
 
-    let pngs: Vec<_> = inputs.iter().filter(|p| p.extension().unwrap() != "png").cloned().collect();
-    let batch = runner.run(&Job::new("convert.webp", pngs.clone()), |_| {}).unwrap();
+    let pngs: Vec<_> = inputs
+        .iter()
+        .filter(|p| p.extension().unwrap() != "png")
+        .cloned()
+        .collect();
+    let batch = runner
+        .run(&Job::new("convert.webp", pngs.clone()), |_| {})
+        .unwrap();
     assert!(batch.ok(), "{:?}", batch.errors);
     assert_eq!(batch.outputs.len(), pngs.len());
 }
@@ -114,7 +127,8 @@ fn many_images_make_one_pdf_and_batches_convert_each() {
 fn every_registered_image_op_leaves_the_source_untouched() {
     let dir = tempfile::tempdir().unwrap();
     let src = dir.path().join("photo.png");
-    morph_engines::image::encode::encode(&fixture_image(), "png", &src, &Default::default()).unwrap();
+    morph_engines::image::encode::encode(&fixture_image(), "png", &src, &Default::default())
+        .unwrap();
     let before = hash(&src);
     let kind = morph_core::detect(&src).unwrap();
     let reg = morph_engines::registry();
@@ -137,6 +151,8 @@ fn unsupported_input_is_rejected() {
     let txt = dir.path().join("notes.txt");
     std::fs::write(&txt, "hello").unwrap();
     let reg = morph_engines::registry();
-    let err = Runner::new(&reg).run(&Job::new("convert.png", vec![txt]), |_| {}).unwrap_err();
+    let err = Runner::new(&reg)
+        .run(&Job::new("convert.png", vec![txt]), |_| {})
+        .unwrap_err();
     assert!(err.to_string().contains("can't take"), "{err}");
 }

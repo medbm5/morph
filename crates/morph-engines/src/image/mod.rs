@@ -14,8 +14,16 @@ use std::path::PathBuf;
 
 /// Every image kind we can read.
 pub const INPUTS: &[&str] = &[
-    "image/jpeg", "image/png", "image/webp", "image/tiff", "image/avif", "image/bmp",
-    "image/gif", "image/heic", "image/svg+xml", "image/x-icon",
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/tiff",
+    "image/avif",
+    "image/bmp",
+    "image/gif",
+    "image/heic",
+    "image/svg+xml",
+    "image/x-icon",
 ];
 
 pub fn register(reg: &mut Registry) {
@@ -32,16 +40,31 @@ pub fn register(reg: &mut Registry) {
         let mut spec = OpSpec::convert(ext, label, INPUTS).order(order);
         if matches!(ext, "jpg" | "webp" | "avif") {
             spec = spec.param(
-                ParamSpec::new("quality", "Quality", ParamKind::Int { min: 1, max: 100 }, json!(default_quality(ext)))
-                    .help("1–100; higher is better and larger"),
+                ParamSpec::new(
+                    "quality",
+                    "Quality",
+                    ParamKind::Int { min: 1, max: 100 },
+                    json!(default_quality(ext)),
+                )
+                .help("1–100; higher is better and larger"),
             );
         }
         if ext == "webp" {
-            spec = spec.param(ParamSpec::new("lossless", "Lossless", ParamKind::Bool, json!(false)));
+            spec = spec.param(ParamSpec::new(
+                "lossless",
+                "Lossless",
+                ParamKind::Bool,
+                json!(false),
+            ));
         }
         spec = spec.param(
-            ParamSpec::new("width", "SVG width", ParamKind::Int { min: 0, max: 32768 }, json!(0))
-                .help("Rasterize SVG input at this width in pixels (0 = intrinsic size)"),
+            ParamSpec::new(
+                "width",
+                "SVG width",
+                ParamKind::Int { min: 0, max: 32768 },
+                json!(0),
+            )
+            .help("Rasterize SVG input at this width in pixels (0 = intrinsic size)"),
         );
         reg.register(Convert { spec, ext });
     }
@@ -53,10 +76,17 @@ pub fn register(reg: &mut Registry) {
             .param(ParamSpec::new(
                 "page",
                 "Page size",
-                ParamKind::Choice { options: vec!["fit".into(), "a4".into(), "letter".into()] },
+                ParamKind::Choice {
+                    options: vec!["fit".into(), "a4".into(), "letter".into()],
+                },
                 json!("fit"),
             ))
-            .param(ParamSpec::new("dpi", "DPI", ParamKind::Int { min: 36, max: 1200 }, json!(150))),
+            .param(ParamSpec::new(
+                "dpi",
+                "DPI",
+                ParamKind::Int { min: 36, max: 1200 },
+                json!(150),
+            )),
     });
 }
 
@@ -88,7 +118,11 @@ impl Operation for Convert {
         ctx.progress.check()?;
         ctx.progress.set(0.5);
         let opts = EncodeOptions {
-            quality: ctx.params.u32("quality").unwrap_or(default_quality(self.ext) as u32).clamp(1, 100) as u8,
+            quality: ctx
+                .params
+                .u32("quality")
+                .unwrap_or(default_quality(self.ext) as u32)
+                .clamp(1, 100) as u8,
             lossless: ctx.params.bool("lossless").unwrap_or(false),
             ..Default::default()
         };
@@ -115,7 +149,12 @@ impl Operation for ToPdf {
             "letter" => pdf_out::PageSize::Letter { margin: 36.0 },
             _ => pdf_out::PageSize::Fit { dpi },
         };
-        let items: Vec<_> = ctx.inputs.iter().cloned().zip(ctx.kinds.iter().cloned()).collect();
+        let items: Vec<_> = ctx
+            .inputs
+            .iter()
+            .cloned()
+            .zip(ctx.kinds.iter().cloned())
+            .collect();
         let out = ctx.sink.file(ctx.input(), "pdf")?;
         pdf_out::images_to_pdf(&items, out.path(), size, ctx.progress)?;
         Ok(vec![out.commit()?])
@@ -126,4 +165,3 @@ impl Operation for ToPdf {
 pub fn is_output(ext: &str) -> bool {
     encode::OUTPUTS.contains(&ext)
 }
-

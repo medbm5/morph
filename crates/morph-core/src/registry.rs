@@ -35,7 +35,12 @@ impl Registry {
     /// Remove every operation whose id starts with `prefix` (used to reload recipes).
     pub fn remove_prefix(&mut self, prefix: &str) {
         self.ops.retain(|o| !o.spec().id.starts_with(prefix));
-        self.index = self.ops.iter().enumerate().map(|(i, o)| (o.spec().id.clone(), i)).collect();
+        self.index = self
+            .ops
+            .iter()
+            .enumerate()
+            .map(|(i, o)| (o.spec().id.clone(), i))
+            .collect();
     }
 
     pub fn get(&self, id: &str) -> Option<&Arc<dyn Operation>> {
@@ -83,13 +88,18 @@ impl Registry {
 
     /// Specs for a selection, for the UI and `morph list --for`.
     pub fn specs_for(&self, kinds: &[Kind], ring: Ring) -> Vec<OpSpec> {
-        self.for_selection(kinds, ring).into_iter().map(|o| o.spec().clone()).collect()
+        self.for_selection(kinds, ring)
+            .into_iter()
+            .map(|o| o.spec().clone())
+            .collect()
     }
 }
 
 fn is_identity(spec: &OpSpec, kinds: &[Kind]) -> bool {
     match &spec.output {
-        crate::op::OutputKind::Ext(ext) => kinds.iter().all(|k| &k.ext == ext && k.family != Family::Folder),
+        crate::op::OutputKind::Ext(ext) => kinds
+            .iter()
+            .all(|k| &k.ext == ext && k.family != Family::Folder),
         _ => false,
     }
 }
@@ -124,19 +134,37 @@ mod tests {
         r.register(Fake(OpSpec::convert("png", "PNG", &["image/*"]).order(2)));
         r.register(Fake(OpSpec::convert("jpg", "JPG", &["image/*"]).order(1)));
         r.register(Fake(OpSpec::convert("mp3", "MP3", &["video/*", "audio/*"])));
-        r.register(Fake(OpSpec::tool("image.crop", "Crop", "Cropped", &["image/*"], OutputKind::SameAsInput)));
+        r.register(Fake(OpSpec::tool(
+            "image.crop",
+            "Crop",
+            "Cropped",
+            &["image/*"],
+            OutputKind::SameAsInput,
+        )));
         r.register(Fake(
-            OpSpec::tool("pdf.merge", "Merge", "Merged", &["application/pdf"], OutputKind::Ext("pdf".into()))
-                .arity(Arity::All),
+            OpSpec::tool(
+                "pdf.merge",
+                "Merge",
+                "Merged",
+                &["application/pdf"],
+                OutputKind::Ext("pdf".into()),
+            )
+            .arity(Arity::All),
         ));
 
         let jpg = kind("jpg", "image/jpeg", Family::Image);
-        let ids: Vec<_> = r.for_selection(&[jpg.clone()], Ring::Convert).iter().map(|o| o.spec().id.clone()).collect();
+        let ids: Vec<_> = r
+            .for_selection(std::slice::from_ref(&jpg), Ring::Convert)
+            .iter()
+            .map(|o| o.spec().id.clone())
+            .collect();
         assert_eq!(ids, vec!["convert.png"]);
         assert_eq!(r.for_selection(&[jpg], Ring::Tools).len(), 1);
 
         let pdf = kind("pdf", "application/pdf", Family::Pdf);
-        assert!(r.for_selection(&[pdf.clone()], Ring::Tools).is_empty());
+        assert!(r
+            .for_selection(std::slice::from_ref(&pdf), Ring::Tools)
+            .is_empty());
         assert_eq!(r.for_selection(&[pdf.clone(), pdf], Ring::Tools).len(), 1);
     }
 
@@ -144,7 +172,10 @@ mod tests {
     fn mixed_selection_needs_common_support() {
         let mut r = Registry::new();
         r.register(Fake(OpSpec::convert("png", "PNG", &["image/*"])));
-        let sel = [kind("jpg", "image/jpeg", Family::Image), kind("pdf", "application/pdf", Family::Pdf)];
+        let sel = [
+            kind("jpg", "image/jpeg", Family::Image),
+            kind("pdf", "application/pdf", Family::Pdf),
+        ];
         assert!(r.for_selection(&sel, Ring::Convert).is_empty());
     }
 

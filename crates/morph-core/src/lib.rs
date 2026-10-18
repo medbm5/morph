@@ -31,7 +31,11 @@ pub enum Error {
     #[error("no input files")]
     NoInputs,
     #[error("`{op}` can't take {kind} files ({path})")]
-    Unsupported { op: String, path: std::path::PathBuf, kind: String },
+    Unsupported {
+        op: String,
+        path: std::path::PathBuf,
+        kind: String,
+    },
     #[error("needs the optional component `{0}`; install it from Settings or `morph component install {0}`")]
     ComponentMissing(String),
     #[error("{0}: {1}")]

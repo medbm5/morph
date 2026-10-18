@@ -60,11 +60,20 @@ pub enum OutputKind {
 #[serde(rename_all = "lowercase", tag = "type")]
 pub enum ParamKind {
     Bool,
-    Int { min: i64, max: i64 },
-    Float { min: f64, max: f64, step: f64 },
+    Int {
+        min: i64,
+        max: i64,
+    },
+    Float {
+        min: f64,
+        max: f64,
+        step: f64,
+    },
     Text,
     /// One of a fixed set of values.
-    Choice { options: Vec<String> },
+    Choice {
+        options: Vec<String>,
+    },
     /// A byte size such as `1MB`, `500KB`.
     Size,
     /// `#RRGGBB` or `#RRGGBBAA`.
@@ -91,7 +100,13 @@ pub struct ParamSpec {
 
 impl ParamSpec {
     pub fn new(key: &str, label: &str, kind: ParamKind, default: Value) -> Self {
-        Self { key: key.into(), label: label.into(), kind, default, help: None }
+        Self {
+            key: key.into(),
+            label: label.into(),
+            kind,
+            default,
+            help: None,
+        }
     }
     pub fn help(mut self, help: &str) -> Self {
         self.help = Some(help.into());
@@ -240,7 +255,9 @@ impl Params {
         self.0.get(key).filter(|v| !v.is_null())
     }
     pub fn str(&self, key: &str) -> Option<&str> {
-        self.get(key).and_then(Value::as_str).filter(|s| !s.is_empty())
+        self.get(key)
+            .and_then(Value::as_str)
+            .filter(|s| !s.is_empty())
     }
     pub fn f64(&self, key: &str) -> Option<f64> {
         match self.get(key)? {
@@ -280,7 +297,9 @@ impl Params {
 /// Parse `1MB`, `500 KB`, `1.5mb`, `2048` into bytes (1 KB = 1000 B, KiB = 1024 B).
 pub fn parse_size(s: &str) -> Option<u64> {
     let s = s.trim().to_ascii_lowercase().replace(' ', "");
-    let split = s.find(|c: char| !(c.is_ascii_digit() || c == '.')).unwrap_or(s.len());
+    let split = s
+        .find(|c: char| !(c.is_ascii_digit() || c == '.'))
+        .unwrap_or(s.len());
     let (num, unit) = s.split_at(split);
     let n: f64 = num.parse().ok()?;
     let mult = match unit {
@@ -347,9 +366,15 @@ mod tests {
 
     #[test]
     fn params_merge_and_coerce() {
-        let spec = OpSpec::convert("png", "PNG", &["image/*"])
-            .param(ParamSpec::new("dpi", "DPI", ParamKind::Int { min: 72, max: 600 }, 300.into()));
-        let p = Params::new().with("quality", "85").merged_over(&spec.default_params());
+        let spec = OpSpec::convert("png", "PNG", &["image/*"]).param(ParamSpec::new(
+            "dpi",
+            "DPI",
+            ParamKind::Int { min: 72, max: 600 },
+            300.into(),
+        ));
+        let p = Params::new()
+            .with("quality", "85")
+            .merged_over(&spec.default_params());
         assert_eq!(p.u32("dpi"), Some(300));
         assert_eq!(p.u32("quality"), Some(85));
     }

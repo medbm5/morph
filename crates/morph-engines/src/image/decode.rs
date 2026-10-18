@@ -26,9 +26,12 @@ fn decode_raster(path: &Path) -> Result<DynamicImage> {
     let reader = ImageReader::open(path)
         .with_context(|| format!("opening {}", path.display()))?
         .with_guessed_format()?;
-    let mut decoder = reader.into_decoder().with_context(|| format!("reading {}", path.display()))?;
+    let mut decoder = reader
+        .into_decoder()
+        .with_context(|| format!("reading {}", path.display()))?;
     let orientation = decoder.orientation().ok();
-    let mut img = DynamicImage::from_decoder(decoder).with_context(|| format!("decoding {}", path.display()))?;
+    let mut img = DynamicImage::from_decoder(decoder)
+        .with_context(|| format!("decoding {}", path.display()))?;
     if let Some(o) = orientation {
         img.apply_orientation(o);
     }
@@ -56,7 +59,11 @@ pub fn decode_svg(path: &Path, width: Option<u32>) -> Result<DynamicImage> {
         bail!("SVG is too large to rasterize ({w}×{h})");
     }
     let mut pixmap = resvg::tiny_skia::Pixmap::new(w, h).context("allocating SVG canvas")?;
-    resvg::render(&tree, resvg::tiny_skia::Transform::from_scale(scale, scale), &mut pixmap.as_mut());
+    resvg::render(
+        &tree,
+        resvg::tiny_skia::Transform::from_scale(scale, scale),
+        &mut pixmap.as_mut(),
+    );
     // tiny-skia stores premultiplied RGBA; un-premultiply for `image`.
     let mut rgba = pixmap.take();
     for px in rgba.chunks_exact_mut(4) {

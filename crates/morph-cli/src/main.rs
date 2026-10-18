@@ -69,11 +69,25 @@ fn run(cli: Cli, registry: &Registry) -> Result<bool> {
         Command::Convert { to, out_dir, rest } => {
             let to = canonical_ext(&to);
             let op_id = format!("convert.{to}");
-            let op = registry.get(&op_id).with_context(|| format!("no conversion to .{to}"))?;
+            let op = registry
+                .get(&op_id)
+                .with_context(|| format!("no conversion to .{to}"))?;
             let (files, params) = args::split(&rest, op.spec())?;
-            run_job(registry, Job { op: op_id, inputs: files, params, out_dir })
+            run_job(
+                registry,
+                Job {
+                    op: op_id,
+                    inputs: files,
+                    params,
+                    out_dir,
+                },
+            )
         }
-        Command::List { files, ring, verbose } => {
+        Command::List {
+            files,
+            ring,
+            verbose,
+        } => {
             list(registry, &files, ring.as_deref(), verbose)?;
             Ok(true)
         }
@@ -103,8 +117,18 @@ pub fn run_job(registry: &Registry, job: Job) -> Result<bool> {
             Some(p) => eprintln!("✗ {}: {error}", p.display()),
             None => eprintln!("✗ {error}"),
         },
-        JobEvent::Progress { fraction, item, total, .. } if fancy => {
-            eprint!("\r{:>3}%  {}/{}  ", (fraction * 100.0) as u32, (item + 1).min(total), total);
+        JobEvent::Progress {
+            fraction,
+            item,
+            total,
+            ..
+        } if fancy => {
+            eprint!(
+                "\r{:>3}%  {}/{}  ",
+                (fraction * 100.0) as u32,
+                (item + 1).min(total),
+                total
+            );
         }
         JobEvent::Finished { .. } if fancy => eprint!("\r                    \r"),
         _ => {}
@@ -135,7 +159,11 @@ fn list(registry: &Registry, files: &[PathBuf], ring: Option<&str>, verbose: boo
         println!("\n{}", format!("{ring:?}").to_uppercase());
         for op in ops {
             let s = op.spec();
-            let note = if op.available() { "" } else { "  (INSTALL COMPONENT)" };
+            let note = if op.available() {
+                ""
+            } else {
+                "  (INSTALL COMPONENT)"
+            };
             println!("  {:<22} {}{note}", s.id, s.label);
             if verbose {
                 for p in &s.params {

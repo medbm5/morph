@@ -38,7 +38,12 @@ pub struct OutputSink {
 
 impl OutputSink {
     pub fn new(naming: Naming, suffix: Option<String>, out_dir: Option<PathBuf>) -> Self {
-        Self { naming, suffix, out_dir, saved: Mutex::new(Vec::new()) }
+        Self {
+            naming,
+            suffix,
+            out_dir,
+            saved: Mutex::new(Vec::new()),
+        }
     }
 
     /// Paths committed so far.
@@ -79,7 +84,13 @@ impl OutputSink {
         fs::create_dir_all(dir)?;
         let tmp = temp_name(dir, "out");
         fs::File::create(&tmp)?;
-        Ok(PendingFile { sink: self, tmp, dir: dir.to_path_buf(), name: name.to_string(), done: false })
+        Ok(PendingFile {
+            sink: self,
+            tmp,
+            dir: dir.to_path_buf(),
+            name: name.to_string(),
+            done: false,
+        })
     }
 
     /// A pending output folder derived from `input` (`report.pdf` → `report/`).
@@ -93,7 +104,13 @@ impl OutputSink {
         fs::create_dir_all(dir)?;
         let tmp = temp_name(dir, "dir");
         fs::create_dir(&tmp)?;
-        Ok(PendingDir { sink: self, tmp, dir: dir.to_path_buf(), name: name.to_string(), done: false })
+        Ok(PendingDir {
+            sink: self,
+            tmp,
+            dir: dir.to_path_buf(),
+            name: name.to_string(),
+            done: false,
+        })
     }
 
     fn record(&self, p: &Path) {
@@ -231,7 +248,10 @@ mod tests {
 
         let sink = OutputSink::new(Naming::default(), None, None);
         let f = sink.file(&src, "png").unwrap();
-        fs::File::create(f.path()).unwrap().write_all(b"new").unwrap();
+        fs::File::create(f.path())
+            .unwrap()
+            .write_all(b"new")
+            .unwrap();
         let out = f.commit().unwrap();
 
         assert_eq!(out.file_name().unwrap(), "photo 2.png");

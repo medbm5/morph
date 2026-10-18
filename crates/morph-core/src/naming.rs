@@ -56,7 +56,10 @@ impl Naming {
             return name.to_string();
         }
         let (base, ext) = split_ext(name);
-        let numbered = self.collision.replace("{name}", base).replace("{n}", &n.to_string());
+        let numbered = self
+            .collision
+            .replace("{name}", base)
+            .replace("{n}", &n.to_string());
         match ext {
             Some(e) => format!("{numbered}.{e}"),
             None => numbered,
@@ -118,15 +121,24 @@ mod tests {
     fn convert_and_tool_names() {
         let n = Naming::default();
         assert_eq!(n.render("Page 001", None, "jpg"), "Page 001.jpg");
-        assert_eq!(n.render("Page 001", Some("Cropped"), "jpg"), "Page 001 Cropped.jpg");
-        assert_eq!(n.render("Page 001", Some("With BG"), "png"), "Page 001 With BG.png");
+        assert_eq!(
+            n.render("Page 001", Some("Cropped"), "jpg"),
+            "Page 001 Cropped.jpg"
+        );
+        assert_eq!(
+            n.render("Page 001", Some("With BG"), "png"),
+            "Page 001 With BG.png"
+        );
         assert_eq!(n.render("report", None, ""), "report");
     }
 
     #[test]
     fn collisions() {
         let n = Naming::default();
-        assert_eq!(n.numbered("Page 001 Cropped.jpg", 2), "Page 001 Cropped 2.jpg");
+        assert_eq!(
+            n.numbered("Page 001 Cropped.jpg", 2),
+            "Page 001 Cropped 2.jpg"
+        );
         assert_eq!(n.numbered("photo.png", 1), "photo.png");
         assert_eq!(n.numbered("folder", 3), "folder 3");
         assert_eq!(n.numbered("archive.tar.gz", 2), "archive.tar 2.gz");
@@ -134,7 +146,10 @@ mod tests {
 
     #[test]
     fn custom_template_and_sanitize() {
-        let n = Naming { tool: "{op} - {stem}.{ext}".into(), ..Naming::default() };
+        let n = Naming {
+            tool: "{op} - {stem}.{ext}".into(),
+            ..Naming::default()
+        };
         assert_eq!(n.render("a:b", Some("Edited"), "jpg"), "Edited - a_b.jpg");
         assert_eq!(today().len(), 10);
     }
