@@ -5,7 +5,7 @@ Thanks for helping. A few ground rules keep the project small, offline and safe.
 ## Before you start
 
 - Open an issue before large changes, so we can agree on the approach.
-- Read the [README](README.md) principles: **offline, non-destructive, CLI parity, both OSes**.
+- Read the [design document](DESIGN.md) principles: **offline, non-destructive, CLI parity, both OSes**.
 - Work happens in slices; see [BUILD_PLAN.md](BUILD_PLAN.md) for the commit-by-commit plan.
 
 ## Setup
