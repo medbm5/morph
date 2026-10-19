@@ -3192,7 +3192,7 @@ dependencies = [
 
 [[package]]
 name = "metamorphosis"
-version = "1.2.0"
+version = "1.2.1"
 dependencies = [
  "anyhow",
  "arboard",
@@ -3268,7 +3268,7 @@ dependencies = [
 
 [[package]]
 name = "morph-cli"
-version = "1.2.0"
+version = "1.2.1"
 dependencies = [
  "anyhow",
  "clap",
@@ -3281,7 +3281,7 @@ dependencies = [
 
 [[package]]
 name = "morph-core"
-version = "1.2.0"
+version = "1.2.1"
 dependencies = [
  "anyhow",
  "dirs 6.0.0",
@@ -3299,7 +3299,7 @@ dependencies = [
 
 [[package]]
 name = "morph-engines"
-version = "1.2.0"
+version = "1.2.1"
 dependencies = [
  "anyhow",
  "calamine",
@@ -3333,7 +3333,7 @@ dependencies = [
 
 [[package]]
 name = "morph-input-watch"
-version = "1.2.0"
+version = "1.2.1"
 dependencies = [
  "anyhow",
  "log",
@@ -3344,7 +3344,7 @@ dependencies = [
 
 [[package]]
 name = "morph-platform"
-version = "1.2.0"
+version = "1.2.1"
 dependencies = [
  "anyhow",
  "arboard",
@@ -3364,7 +3364,7 @@ dependencies = [
 
 [[package]]
 name = "morph-shell"
-version = "1.2.0"
+version = "1.2.1"
 dependencies = [
  "windows 0.62.2",
  "windows-core 0.62.2",
@@ -3372,7 +3372,7 @@ dependencies = [
 
 [[package]]
 name = "morph-updater"
-version = "1.2.0"
+version = "1.2.1"
 dependencies = [
  "anyhow",
  "flate2",
