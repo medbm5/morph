@@ -42,6 +42,7 @@ pub fn recipes(app: &AppHandle) {
         return;
     }
     *RECIPES.lock().unwrap() = Some(w);
+    log::info!("watching recipes in {}", dir.display());
     let app = app.clone();
     std::thread::Builder::new()
         .name("morph-recipes".into())

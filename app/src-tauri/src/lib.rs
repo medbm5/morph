@@ -78,13 +78,15 @@ pub fn run() {
             settings::watch_ops,
         ])
         .setup(|app| {
+            // Watch the recipes folder before the first load, so a recipe saved
+            // while the app starts is never missed.
+            watch::recipes(app.handle());
             // The registry needs the app handle (actions use its windows).
             commands::reload_registry_for(app.handle());
             tray::create(app.handle())?;
             overlay::create(app.handle())?;
             overlay::start_watcher(app.handle());
             integration::install_once(app.handle());
-            watch::recipes(app.handle());
             settings::apply(app.handle(), &app.state::<AppState>().settings(), false);
             let args: Vec<String> = std::env::args().collect();
             handle_args(app.handle(), &args, true);

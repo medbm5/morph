@@ -32,8 +32,10 @@ try {
   # Wait for the app to start (a cold start on CI can take a while).
   $log = Join-Path $dir 'data\morph.log'
   $deadline = (Get-Date).AddSeconds(90)
-  do { Start-Sleep -Milliseconds 500; $m0 = if (Test-Path $log) { (Select-String -Path $log -Pattern '(\d+) operations registered').Matches } }
-  until ($m0 -or (Get-Date) -gt $deadline)
+  # Ready once the watch folders are set up (the last step of start-up).
+  do { Start-Sleep -Milliseconds 500; $ready = (Test-Path $log) -and (Select-String -Path $log -Pattern 'watching .+ recipe\.e2e-duplicate' -Quiet) }
+  until ($ready -or (Get-Date) -gt $deadline)
+  $m0 = (Select-String -Path $log -Pattern '(\d+) operations registered').Matches
   if (-not $m0) { throw "the app didn't start within 90 s" }
   Start-Sleep 2
   $before = $m0[-1].Groups[1].Value
