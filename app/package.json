@@ -1,7 +1,7 @@
 {
   "name": "metamorphosis-app",
   "private": true,
-  "version": "1.2.1",
+  "version": "1.3.0",
   "scripts": {
     "tauri": "tauri",
     "dev": "tauri dev",
