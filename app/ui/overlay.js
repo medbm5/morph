@@ -106,6 +106,12 @@
     releaseTimer = setTimeout(() => { if (open && !job) close(); }, 450);
   });
 
+  // Clicked somewhere else while the ring was still up: dismiss it (a running job keeps its card).
+  listen('ring://outside', () => {
+    if (!open || job) return;
+    if (ring.busy()) close(); else ring.cancel();
+  });
+
   /* ---------- Native drop target ---------- */
   const toClient = (pos) => ({ x: pos.x / window.devicePixelRatio, y: pos.y / window.devicePixelRatio });
 

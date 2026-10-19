@@ -26,6 +26,8 @@ pub struct RingSession {
     /// target tells us what's really being dragged.
     pub prefetched: Vec<PathBuf>,
     pub last_latency_ms: Option<f64>,
+    /// Where the overlay sits on screen (physical pixels).
+    pub rect: Option<morph_platform::Rect>,
 }
 
 impl AppState {

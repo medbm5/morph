@@ -112,6 +112,11 @@ pub enum Action {
     },
     /// Mouse released with no ring open: the drag is over.
     DragEnded,
+    /// Mouse button pressed anywhere (closes a ring left open after a click outside it).
+    Pressed {
+        x: i32,
+        y: i32,
+    },
 }
 
 /// Trigger-key mapping (configurable in Settings).
@@ -250,6 +255,7 @@ impl Machine {
                 self.held = None;
                 self.touch = matches!(raw, Raw::TouchDown { .. });
                 self.still_since = Some(((x, y), now));
+                out.actions.push(Action::Pressed { x, y });
             }
             Raw::Tick => {
                 // Touch: no keyboard to tap, so holding still mid-drag opens the Convert ring.

@@ -57,6 +57,7 @@ fn show(app: &AppHandle, x: i32, y: i32) {
         size = size.min((area.h as f64 * 0.75) as i32);
     }
     let rect = morph_platform::centred_square(x, y, size);
+    app.state::<AppState>().ring.lock().unwrap().rect = Some(rect);
 
     #[cfg(windows)]
     {
@@ -203,6 +204,24 @@ fn handle(app: &AppHandle, action: Action) {
         }
         Action::Released { .. } => {
             let _ = app.emit_to(LABEL, "ring://released", ());
+        }
+        Action::Pressed { x, y } => {
+            // A click outside the ring's disc while it's still up dismisses it.
+            let outside = {
+                let s = state.ring.lock().unwrap();
+                match (s.open, s.rect) {
+                    (Some(_), Some(r)) => {
+                        let radius = r.w as f64 * 588.0 / 600.0 / 2.0;
+                        let dx = (x - (r.x + r.w / 2)) as f64;
+                        let dy = (y - (r.y + r.h / 2)) as f64;
+                        dx * dx + dy * dy > radius * radius
+                    }
+                    _ => false,
+                }
+            };
+            if outside {
+                let _ = app.emit_to(LABEL, "ring://outside", ());
+            }
         }
         Action::Moved { .. } | Action::DragEnded => {}
     }
