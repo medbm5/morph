@@ -27,6 +27,7 @@ info="gh-releases-zsync|${owner}|morph|latest|Metamorphosis_*_amd64.AppImage.zsy
 ARCH=x86_64 "$tool" --no-appstream -u "$info" squashfs-root "$appimage.new" >/dev/null
 mv "$appimage.new" "$appimage"
 mv "$appimage.new.zsync" "$appimage.zsync" 2>/dev/null || mv ./*.zsync "$appimage.zsync"
-sed -i "s|^Filename: .*|Filename: $(basename "$appimage")|" "$appimage.zsync"
+name=$(basename "$appimage")
+sed -i -e "s|^Filename: .*|Filename: $name|" -e "s|^URL: .*|URL: $name|" "$appimage.zsync"
 echo "embedded: $info"
 ls -l "$appimage" "$appimage.zsync"

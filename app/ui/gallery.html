@@ -20,7 +20,7 @@ h1 { margin: 0 0 6px; font-size: 18px; letter-spacing: 6px; color: var(--hud-lin
 .wide .panel-host { min-height: 640px; position: relative; }
 .wide .panel-host .hud-frame { min-height: 640px; }
 .wallpaper { background: linear-gradient(135deg, #f4f1e8, #cfd8dc 40%, #fff6dd); padding: 10px; }
-.contrast { font-family: var(--font-readout); font-size: 12px; display: grid; grid-template-columns: 26px 90px 1fr; gap: 8px; align-items: center; }
+.contrast { font-family: var(--font-readout); font-size: 12px; display: grid; grid-template-columns: 26px 90px 1fr; gap: 8px; align-items: center; grid-auto-rows: 22px; line-height: 22px; }
 .contrast span.s { width: 18px; height: 18px; border-radius: 50%; display: inline-block; }
 /* Snapshot mode: freeze every animation at its final frame. */
 .hud-static *, .hud-static *::before, .hud-static *::after { animation: none !important; transition: none !important; }
@@ -85,7 +85,7 @@ h1 { margin: 0 0 6px; font-size: 18px; letter-spacing: 6px; color: var(--hud-lin
   [['AMBER', '#FFB347'], ['CYAN', '#4FE3FF'], ['PINK', '#FF5EA8'], ['LIME', '#9CFF6E']].forEach(([n, c]) =>
     ring('ACCENT · ' + n, { items: tools.slice(0, 5), ringName: 'TOOLS', accent: c }, (r) => r.setHot(2)));
 
-  const cc = card('ACCENT CONTRAST VS --hud-core (≥ 4.5 REQUIRED)');
+  const cc = card('ACCENT CONTRAST (≥ 4.5 : 1)');
   const table = hudEl('div', { class: 'contrast' });
   ['#FFB347', '#4FE3FF', '#FF5EA8', '#9CFF6E', '#3355AA', '#7A2E2E'].forEach((c) => {
     const ratio = HudColor.accentContrast(c);

@@ -83,6 +83,8 @@ body::after { /* fine grain */
 /* ---------- Hero ---------- */
 .hero { max-width: var(--max); margin: 0 auto; padding: clamp(140px, 18vh, 200px) var(--gutter) 40px; text-align: center; }
 .eyebrow { display: inline-flex; align-items: center; gap: 10px; font: 500 13px var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); padding: 8px 14px; border: 1px solid var(--line); border-radius: 999px; background: rgba(255,255,255,.03); }
+.eyebrow-link { color: var(--ink); text-decoration: none; margin-left: 6px; padding-left: 12px; border-left: 1px solid var(--line-2); }
+.eyebrow-link:hover { color: var(--accent); }
 .dot { width: 7px; height: 7px; border-radius: 50%; background: #9cff6e; box-shadow: 0 0 10px #9cff6e; }
 .display { font-size: clamp(44px, 8.4vw, 132px); line-height: .94; letter-spacing: -.045em; font-weight: 600; margin: 28px 0 28px; }
 .display .line { display: block; overflow: hidden; padding-bottom: .06em; }

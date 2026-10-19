@@ -74,6 +74,9 @@ jobs:
           # which can't read newer ELF sections.
           APPIMAGE_EXTRACT_AND_RUN: "1"
           NO_STRIP: "true"
+          # The bundled FFmpeg finds its libraries through $ORIGIN/../lib at run
+          # time; linuxdeploy needs them on the search path while bundling.
+          LD_LIBRARY_PATH: ${{ github.workspace }}/vendor/ffmpeg/linux/lib
         with:
           projectPath: app
           tauriScript: npx tauri
@@ -88,7 +91,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           img=$(ls target/release/bundle/appimage/*.AppImage)
-          bash scripts/appimage_zsync.sh "$img" "${{ github.repository_owner }}"
+          APPIMAGE_EXTRACT_AND_RUN=1 bash scripts/appimage_zsync.sh "$img" "${{ github.repository_owner }}"
           gh release upload "${{ github.ref_name }}" "$img" "$img.zsync" --clobber
       - name: Build morph CLI
         run: cargo build --release -p morph-cli

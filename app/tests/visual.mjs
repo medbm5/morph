@@ -132,7 +132,8 @@ for (const [name, type] of [['chromium', chromium], ['webkit', webkit]]) {
 
 // 2. Cross-engine parity.
 const cross = diff(shots.chromium, shots.webkit);
-check(cross < MAX_DIFF, `chromium vs webkit: ${(cross * 100).toFixed(2)} % of pixels differ`);
+const dims = (p) => `${p.width}×${p.height}`;
+check(cross < MAX_DIFF, `chromium vs webkit: ${(cross * 100).toFixed(2)} % of pixels differ (${dims(shots.chromium)} vs ${dims(shots.webkit)})`);
 
 server.close();
 if (failures) { console.error(`\n${failures} check(s) failed`); process.exit(1); }

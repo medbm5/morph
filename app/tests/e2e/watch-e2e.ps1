@@ -29,9 +29,14 @@ out = "Done"
 
 $p = Start-Process $Exe -ArgumentList '--background' -PassThru
 try {
-  Start-Sleep 4
+  # Wait for the app to start (a cold start on CI can take a while).
   $log = Join-Path $dir 'data\morph.log'
-  $before = (Select-String -Path $log -Pattern '(\d+) operations registered').Matches[-1].Groups[1].Value
+  $deadline = (Get-Date).AddSeconds(90)
+  do { Start-Sleep -Milliseconds 500; $m0 = if (Test-Path $log) { (Select-String -Path $log -Pattern '(\d+) operations registered').Matches } }
+  until ($m0 -or (Get-Date) -gt $deadline)
+  if (-not $m0) { throw "the app didn't start within 90 s" }
+  Start-Sleep 2
+  $before = $m0[-1].Groups[1].Value
 
   # 1. Drop a recipe in: it registers without a restart.
   @'
