@@ -69,9 +69,10 @@ mod imp {
         let ruleset = Ruleset::default()
             .handle_access(AccessFs::from_write(abi))?
             .create()?
+            // Only write rights are handled, so rules may only grant write rights.
             .add_rule(PathBeneath::new(
                 PathFd::new(stage)?,
-                AccessFs::from_all(abi),
+                AccessFs::from_write(abi),
             ))?
             .add_rule(PathBeneath::new(
                 PathFd::new("/dev")?,

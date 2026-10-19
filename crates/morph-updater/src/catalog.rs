@@ -91,13 +91,14 @@ pub static CATALOG: &[Component] = &[
         ],
         linux: &[
             Asset {
-                url: "https://github.com/microsoft/onnxruntime/releases/download/v1.22.0/onnxruntime-linux-x64-1.22.0.tgz",
-                sha256: "8344d55f93d5bc5021ce342db50f62079daf39aaafb5d311a451846228be49b3",
-                size: 7_798_730,
+                // 1.23: the 1.22 Linux build aborts while loading UltraFace and the text detector.
+                url: "https://github.com/microsoft/onnxruntime/releases/download/v1.23.2/onnxruntime-linux-x64-1.23.2.tgz",
+                sha256: "1fa4dcaef22f6f7d5cd81b28c2800414350c10116f5fdd46a2160082551c5f9b",
+                size: 8_309_231,
                 unpack: Unpack::TarGz,
                 files: &[
-                    ("onnxruntime-linux-x64-1.22.0/lib/libonnxruntime.so.1.22.0", "libonnxruntime.so"),
-                    ("onnxruntime-linux-x64-1.22.0/LICENSE", "ONNXRUNTIME-LICENSE.txt"),
+                    ("onnxruntime-linux-x64-1.23.2/lib/libonnxruntime.so.1.23.2", "libonnxruntime.so"),
+                    ("onnxruntime-linux-x64-1.23.2/LICENSE", "ONNXRUNTIME-LICENSE.txt"),
                 ],
             },
             ULTRAFACE,
