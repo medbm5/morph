@@ -18,6 +18,8 @@ pub struct Item {
     /// Name the first output would get (`Page 001 Cropped.jpg`).
     pub out: Option<String>,
     pub editor: Option<String>,
+    /// Runs with its defaults when dropped on the drag ring (editor only in the ring window).
+    pub quick: bool,
     /// `INSTALL` when the op needs a missing optional component.
     pub badge: Option<String>,
     pub disabled: bool,
@@ -117,6 +119,7 @@ pub fn ring_items(
     let items: Vec<Item> = registry
         .for_selection(&kinds, ring_of(ring))
         .into_iter()
+        .filter(|op| !op.spec().unlisted)
         .map(|op| {
             let s = op.spec();
             let first = &paths[0];
@@ -135,6 +138,7 @@ pub fn ring_items(
                 label: s.label.clone(),
                 out,
                 editor: s.editor.clone(),
+                quick: s.quick,
                 badge: (!available).then(|| "INSTALL".to_string()),
                 disabled: !available,
                 component: s.component.clone(),
@@ -205,12 +209,14 @@ pub fn run_op(
                 .is_some_and(|o| o.spec().ring == Ring::Actions);
             if let (Ok(report), false, true) = (&result, is_action, settings.history) {
                 if !report.outputs.is_empty() {
-                    let label = registry
-                        .get(&job.op)
-                        .map(|o| o.spec().label.clone())
-                        .unwrap_or_default();
+                    let spec = registry.get(&job.op).map(|o| o.spec().clone());
+                    let label = spec.as_ref().map(|s| s.label.clone()).unwrap_or_default();
+                    let params = match &spec {
+                        Some(s) => s.without_secrets(&job.params),
+                        None => job.params.clone(),
+                    };
                     let h = morph_core::history::History::default();
-                    match h.record(&job.op, &label, &job.inputs, &report.outputs, &job.params) {
+                    match h.record(&job.op, &label, &job.inputs, &report.outputs, &params) {
                         Ok(e) => {
                             let _ = app.emit(
                                 "history://recorded",

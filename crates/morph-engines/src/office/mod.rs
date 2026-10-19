@@ -3,14 +3,10 @@
 //! - pandoc (separate GPL process): DOCX ↔ Markdown ↔ TXT ↔ EPUB, HTML export, RTF input.
 //! - LibreOffice (optional, the user's installation): slides and office files to PDF and
 //!   images, Pages input. Segments that need it show INSTALL COMPONENT when it's missing.
-//! - Pure Rust: spreadsheets (XLSX/ODS/CSV/TSV, XLS input), subtitles (SRT ↔ VTT, TXT),
-//!   PDF → PPTX (page images), PDF → EPUB, PDF tables → XLSX (experimental).
+//! - Pure Rust: spreadsheets (XLSX/ODS/CSV/TSV, XLS input), subtitles (SRT ↔ VTT, TXT).
 
-pub mod epub;
-pub mod pptx;
 pub mod sheets;
 pub mod subtitles;
-pub mod tables;
 
 use anyhow::{bail, Context, Result};
 use morph_core::{OpContext, OpSpec, Operation, Registry};
@@ -52,6 +48,13 @@ pub fn register(reg: &mut Registry) {
         spec.id = format!("doc.to-{ext}");
         reg.register(Pandoc { spec, ext });
     }
+    // Office files go straight through LibreOffice; text documents are laid out by
+    // pandoc first (as DOCX) so headings, lists and tables survive.
+    let mut text_pdf = OpSpec::convert("pdf", "PDF", &["ext:md", "ext:txt", "ext:html"])
+        .order(1)
+        .component("pandoc");
+    text_pdf.id = "doc.to-pdf".into();
+    reg.register(TextPdf { spec: text_pdf });
     let mut pdf = OpSpec::convert("pdf", "PDF", OFFICE)
         .order(6)
         .component("libreoffice");
@@ -78,9 +81,6 @@ pub fn register(reg: &mut Registry) {
         spec: pages,
         kind: OfficeKind::Docx,
     });
-    pptx::register(reg);
-    epub::register(reg);
-    tables::register(reg);
     sheets::register(reg);
     subtitles::register(reg);
 }
@@ -161,6 +161,49 @@ impl Operation for Pandoc {
             bail!("pandoc: {}", String::from_utf8_lossy(&o.stderr).trim());
         }
         Ok(vec![out.commit()?])
+    }
+}
+
+/// Markdown, HTML or plain text → PDF: pandoc writes a DOCX, LibreOffice prints it.
+struct TextPdf {
+    spec: OpSpec,
+}
+
+impl Operation for TextPdf {
+    fn spec(&self) -> &OpSpec {
+        &self.spec
+    }
+    fn available(&self) -> bool {
+        pandoc().is_some() && soffice().is_some()
+    }
+    fn run(&self, ctx: &OpContext) -> Result<Vec<PathBuf>> {
+        let exe = pandoc()
+            .ok_or_else(|| anyhow::anyhow!(morph_core::Error::ComponentMissing("pandoc".into())))?;
+        let input = ctx.input();
+        let tmp = scratch()?;
+        let result = (|| -> Result<Vec<PathBuf>> {
+            let docx = tmp.join(format!("{}.docx", morph_core::output::stem_of(input)));
+            let mut c = Command::new(exe);
+            quiet(&mut c)
+                .arg("--from")
+                .arg(reader_format(&ctx.kind().ext))
+                .args(["--to", "docx", "--sandbox", "--output"])
+                .arg(&docx)
+                .arg(input);
+            let o = c.output().context("running pandoc")?;
+            if !o.status.success() {
+                bail!("pandoc: {}", String::from_utf8_lossy(&o.stderr).trim());
+            }
+            ctx.progress.set(0.3);
+            let pdf_dir = tmp.join("pdf");
+            std::fs::create_dir_all(&pdf_dir)?;
+            let produced = libreoffice_convert(&docx, "pdf", &pdf_dir, ctx.progress)?;
+            let out = ctx.sink.file(input, "pdf")?;
+            std::fs::copy(&produced, out.path())?;
+            Ok(vec![out.commit()?])
+        })();
+        let _ = std::fs::remove_dir_all(&tmp);
+        result
     }
 }
 

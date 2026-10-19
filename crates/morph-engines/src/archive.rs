@@ -1,4 +1,4 @@
-//! Archives: create ZIP / TAR / TAR.GZ (GZIP for a single file) from a selection,
+//! Archives: create ZIP, or TAR.GZ outside Windows (GZIP for a single file), from a selection,
 //! extract ZIP, TAR, GZIP and 7z in Rust, and RAR through libarchive's `bsdtar`
 //! (built into Windows 10+ as `tar.exe`; `libarchive-tools` on Linux).
 //!
@@ -8,7 +8,7 @@
 use anyhow::{bail, Context, Result};
 use morph_core::{Arity, OpContext, OpSpec, Operation, OutputKind, Registry};
 use std::fs;
-use std::io::{Read, Write};
+use std::io::Read;
 use std::path::{Component, Path, PathBuf};
 use std::process::{Command, Stdio};
 
@@ -16,11 +16,12 @@ const ANY: &[&str] = &["*", "folder"];
 const ARCHIVES: &[&str] = &["ext:zip", "ext:tar", "ext:gz", "ext:7z", "ext:rar"];
 
 pub fn register(reg: &mut Registry) {
-    for (id, label, order) in [
-        ("archive.zip", "ZIP", 30),
-        ("archive.tar", "TAR", 31),
-        ("archive.targz", "TAR.GZ", 32),
-    ] {
+    // TAR.GZ is what Linux users share; on Windows it's noise next to ZIP.
+    let mut formats = vec![("archive.zip", "ZIP", 30)];
+    if cfg!(not(windows)) {
+        formats.push(("archive.targz", "TAR.GZ", 32));
+    }
+    for (id, label, order) in formats {
         let mut spec = OpSpec::tool(id, label, "", ANY, OutputKind::Ext("zip".into()))
             .arity(Arity::All)
             .order(order);
@@ -91,7 +92,6 @@ impl Operation for Create {
         let single_file_gz = kind == "archive.targz" && single && ctx.input().is_file();
         let (ext, stem) = match kind {
             "archive.zip" => ("zip", stem),
-            "archive.tar" => ("tar", stem),
             _ if single_file_gz => (
                 "gz",
                 ctx.input()
@@ -125,21 +125,14 @@ impl Operation for Create {
                 gz.finish()?;
             }
             _ => {
-                let w: Box<dyn Write> = if ext == "tar.gz" {
-                    Box::new(flate2::write::GzEncoder::new(
-                        f,
-                        flate2::Compression::default(),
-                    ))
-                } else {
-                    Box::new(f)
-                };
+                let w = flate2::write::GzEncoder::new(f, flate2::Compression::default());
                 let mut t = tar::Builder::new(w);
                 for (i, (path, name)) in files.iter().enumerate() {
                     ctx.progress.check()?;
                     t.append_path_with_name(path, name)?;
                     ctx.progress.set((i + 1) as f32 / total as f32);
                 }
-                t.into_inner()?.flush()?;
+                t.into_inner()?.finish()?;
             }
         }
         Ok(vec![out.commit()?])

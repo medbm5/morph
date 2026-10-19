@@ -70,7 +70,7 @@ fn video_conversion_matrix() {
     let webm = run("media.to-webm", &mp4, Params::new());
     for input in [&mp4, &webm] {
         let in_ext = input.extension().unwrap().to_string_lossy().to_string();
-        for ext in ["mp4", "mov", "mkv", "webm", "avi", "wmv", "gif", "mp3"] {
+        for ext in ["mp4", "mov", "mkv", "webm", "gif", "mp3"] {
             if ext == in_ext {
                 continue;
             }
@@ -124,7 +124,7 @@ fn audio_conversion_matrix() {
     let mp3 = run("media.to-mp3", &wav, Params::new());
     for input in [&wav, &mp3] {
         let in_ext = input.extension().unwrap().to_string_lossy().to_string();
-        for ext in ["mp3", "m4a", "wav", "flac", "ogg", "opus", "aiff", "wma"] {
+        for ext in ["mp3", "m4a", "wav", "flac", "opus"] {
             if ext == in_ext {
                 continue;
             }

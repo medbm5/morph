@@ -28,7 +28,7 @@ pub fn register(reg: &mut Registry) {
             INPUTS,
             OutputKind::SameAsInput,
         )
-        .order(7)
+        .order(8)
         .editor("redact")
         .param(ParamSpec::new("areas", "Areas", ParamKind::Json, json!([])))
         .param(
@@ -61,7 +61,7 @@ pub fn register(reg: &mut Registry) {
             INPUTS,
             OutputKind::Ext("png".into()),
         )
-        .order(9)
+        .order(7)
         .component("bgremove"),
     });
     reg.register(ExtractText {
@@ -72,7 +72,7 @@ pub fn register(reg: &mut Registry) {
             INPUTS,
             OutputKind::Ext("txt".into()),
         )
-        .order(10)
+        .order(9)
         .component("ocr"),
     });
     reg.register(SearchablePdf {

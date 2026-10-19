@@ -1,5 +1,6 @@
-//! PDF tools (S12): Merge, Organize pages, Compress — structure edits with lopdf,
-//! so text stays selectable and links keep pointing at their pages.
+//! PDF tools (S12): Compress, Merge, Split, Organize pages, Page numbers, Watermark,
+//! Protect, Unlock — structure edits with lopdf, so text stays selectable and links keep
+//! pointing at their pages.
 
 use anyhow::{bail, Context, Result};
 use lopdf::{Dictionary, Document, Object, ObjectId, Stream};
@@ -20,12 +21,24 @@ pub fn register(reg: &mut Registry) {
             OutputKind::Ext("pdf".into()),
         )
         .arity(Arity::All)
-        .order(1)
+        .order(2)
         .editor("pdf-merge"),
+    });
+    reg.register(Split {
+        spec: OpSpec::tool("pdf.split", "Split", "Pages", PDF, OutputKind::Folder)
+            .order(3)
+            .editor("form")
+            .quick()
+            .param(ParamSpec::new(
+                "every",
+                "Pages per file",
+                ParamKind::Int { min: 1, max: 1000 },
+                json!(1),
+            )),
     });
     reg.register(Organize {
         spec: OpSpec::tool("pdf.organize", "Organize", "Organized", PDF, OutputKind::Ext("pdf".into()))
-            .order(2)
+            .order(4)
             .editor("pages")
             .param(
                 ParamSpec::new("pages", "Pages", ParamKind::Text, json!(""))
@@ -40,7 +53,7 @@ pub fn register(reg: &mut Registry) {
             PDF,
             OutputKind::Ext("pdf".into()),
         )
-        .order(3)
+        .order(1)
         .param(
             ParamSpec::new(
                 "level",
@@ -51,6 +64,110 @@ pub fn register(reg: &mut Registry) {
                 json!("medium"),
             )
             .help("high = best quality, low = smallest file"),
+        ),
+    });
+    reg.register(Stamp {
+        kind: StampKind::Numbers,
+        spec: OpSpec::tool(
+            "pdf.page-numbers",
+            "Page numbers",
+            "Numbered",
+            PDF,
+            OutputKind::Ext("pdf".into()),
+        )
+        .order(5)
+        .editor("form")
+        .quick()
+        .param(ParamSpec::new(
+            "style",
+            "Style",
+            ParamKind::Choice {
+                options: vec!["1".into(), "1 / 9".into(), "Page 1 of 9".into()],
+            },
+            json!("1"),
+        ))
+        .param(ParamSpec::new(
+            "position",
+            "Position",
+            ParamKind::Choice {
+                options: vec![
+                    "bottom-center".into(),
+                    "bottom-right".into(),
+                    "top-right".into(),
+                ],
+            },
+            json!("bottom-center"),
+        ))
+        .param(ParamSpec::new(
+            "start",
+            "First number",
+            ParamKind::Int {
+                min: 0,
+                max: 100_000,
+            },
+            json!(1),
+        )),
+    });
+    reg.register(Stamp {
+        kind: StampKind::Watermark,
+        spec: OpSpec::tool(
+            "pdf.watermark",
+            "Watermark",
+            "Watermarked",
+            PDF,
+            OutputKind::Ext("pdf".into()),
+        )
+        .order(6)
+        .editor("form")
+        .param(ParamSpec::new(
+            "text",
+            "Text",
+            ParamKind::Text,
+            json!("CONFIDENTIAL"),
+        ))
+        .param(ParamSpec::new(
+            "opacity",
+            "Opacity %",
+            ParamKind::Int { min: 5, max: 100 },
+            json!(20),
+        )),
+    });
+    reg.register(Protect {
+        spec: OpSpec::tool(
+            "pdf.protect",
+            "Protect",
+            "Protected",
+            PDF,
+            OutputKind::Ext("pdf".into()),
+        )
+        .order(7)
+        .editor("form")
+        .param(ParamSpec::new(
+            "password",
+            "Password",
+            ParamKind::Password,
+            json!(""),
+        ))
+        .param(ParamSpec::new(
+            "confirm",
+            "Confirm password",
+            ParamKind::Password,
+            json!(""),
+        )),
+    });
+    reg.register(Unlock {
+        spec: OpSpec::tool(
+            "pdf.unlock",
+            "Unlock",
+            "Unlocked",
+            PDF,
+            OutputKind::Ext("pdf".into()),
+        )
+        .order(8)
+        .editor("form")
+        .param(
+            ParamSpec::new("password", "Password", ParamKind::Password, json!(""))
+                .help("Leave empty if the PDF opens without one (printing or copying locked)"),
         ),
     });
 }
@@ -446,6 +563,413 @@ impl Operation for Compress {
         // Already optimal: keep a byte-identical copy rather than a bigger file.
         if std::fs::metadata(out.path())?.len() > std::fs::metadata(ctx.input())?.len() {
             std::fs::copy(ctx.input(), out.path())?;
+        }
+        Ok(vec![out.commit()?])
+    }
+}
+
+struct Split {
+    spec: OpSpec,
+}
+
+impl Operation for Split {
+    fn spec(&self) -> &OpSpec {
+        &self.spec
+    }
+    fn run(&self, ctx: &OpContext) -> Result<Vec<PathBuf>> {
+        let doc = load(ctx.input())?;
+        let count = doc.get_pages().len();
+        let every = ctx.params.u32("every").unwrap_or(1).max(1) as usize;
+        if count <= every {
+            bail!("this PDF has {count} page(s): nothing to split");
+        }
+        let dir = ctx.sink.folder(ctx.input())?;
+        let width = count.to_string().len().max(3);
+        let chunks = count.div_ceil(every);
+        for (n, first) in (0..count).step_by(every).enumerate() {
+            ctx.progress.check()?;
+            let last = (first + every).min(count);
+            let order: Vec<PageRef> = (first..last)
+                .map(|page| PageRef { page, rotate: 0 })
+                .collect();
+            let mut part = doc.clone();
+            organize(&mut part, &order)?;
+            part.prune_objects();
+            let name = if last - first == 1 {
+                format!("Page {:0width$}.pdf", first + 1)
+            } else {
+                format!("Pages {:0width$}-{:0width$}.pdf", first + 1, last)
+            };
+            save(&mut part, &dir.path().join(name))?;
+            ctx.progress.set((n + 1) as f32 / chunks as f32);
+        }
+        Ok(vec![dir.commit()?])
+    }
+}
+
+#[derive(Clone, Copy)]
+enum StampKind {
+    Numbers,
+    Watermark,
+}
+
+/// Page numbers and watermarks: text drawn over each page in a new content stream.
+struct Stamp {
+    kind: StampKind,
+    spec: OpSpec,
+}
+
+impl Operation for Stamp {
+    fn spec(&self) -> &OpSpec {
+        &self.spec
+    }
+    fn run(&self, ctx: &OpContext) -> Result<Vec<PathBuf>> {
+        let mut doc = load(ctx.input())?;
+        flatten_inheritance(&mut doc)?;
+        let pages: Vec<ObjectId> = doc.get_pages().into_values().collect();
+        let total = pages.len();
+        let p = &ctx.params;
+        let text = p.str("text").unwrap_or("CONFIDENTIAL").to_string();
+        if matches!(self.kind, StampKind::Watermark) && text.trim().is_empty() {
+            bail!("type the watermark text");
+        }
+        let name = |n: &str| Object::Name(n.as_bytes().to_vec());
+        let mut f = Dictionary::new();
+        f.set("Type", name("Font"));
+        f.set("Subtype", name("Type1"));
+        f.set("BaseFont", name("Helvetica"));
+        f.set("Encoding", name("WinAnsiEncoding"));
+        let font = doc.add_object(f);
+        let alpha = p.u32("opacity").unwrap_or(20).clamp(5, 100) as f32 / 100.0;
+        let mut g = Dictionary::new();
+        g.set("Type", name("ExtGState"));
+        g.set("ca", alpha);
+        g.set("CA", alpha);
+        let gs = doc.add_object(g);
+        let start = p.u32("start").unwrap_or(1) as usize;
+        for (i, &page) in pages.iter().enumerate() {
+            ctx.progress.check()?;
+            let geo = PageGeometry::of(&doc, page)?;
+            let ops = match self.kind {
+                StampKind::Numbers => {
+                    let n = start + i;
+                    let last = start + total - 1;
+                    let label = match p.str("style").unwrap_or("1") {
+                        "1 / 9" => format!("{n} / {last}"),
+                        "Page 1 of 9" => format!("Page {n} of {last}"),
+                        _ => n.to_string(),
+                    };
+                    let size = 10.0;
+                    let width = text_width(&label, size);
+                    let margin = 28.0;
+                    let (x, y) = match p.str("position").unwrap_or("bottom-center") {
+                        "bottom-right" => (geo.w - margin - width, margin),
+                        "top-right" => (geo.w - margin - width, geo.h - margin - size),
+                        _ => ((geo.w - width) / 2.0, margin),
+                    };
+                    format!(
+                        "q {} cm 0 g BT /MorphF {size} Tf {x:.2} {y:.2} Td {} Tj ET Q",
+                        geo.cm(),
+                        pdf_text(&label)
+                    )
+                }
+                StampKind::Watermark => {
+                    let diag = (geo.w * geo.w + geo.h * geo.h).sqrt();
+                    let size = (0.7 * diag / text_width(&text, 1.0)).min(160.0);
+                    let width = text_width(&text, size);
+                    let angle = geo.h.atan2(geo.w);
+                    let (sin, cos) = angle.sin_cos();
+                    format!(
+                        "q {} cm /MorphG gs 0.5 g 1 0 0 1 {:.2} {:.2} cm {cos:.4} {sin:.4} {:.4} {cos:.4} 0 0 cm BT /MorphF {size:.2} Tf {:.2} {:.2} Td {} Tj ET Q",
+                        geo.cm(),
+                        geo.w / 2.0,
+                        geo.h / 2.0,
+                        -sin,
+                        -width / 2.0,
+                        -size / 3.0,
+                        pdf_text(&text)
+                    )
+                }
+            };
+            add_resource(&mut doc, page, b"Font", "MorphF", font)?;
+            add_resource(&mut doc, page, b"ExtGState", "MorphG", gs)?;
+            overlay(&mut doc, page, ops.into_bytes())?;
+            ctx.progress.set((i + 1) as f32 / total.max(1) as f32 * 0.8);
+        }
+        let out = ctx.sink.file(ctx.input(), "pdf")?;
+        save(&mut doc, out.path())?;
+        Ok(vec![out.commit()?])
+    }
+}
+
+/// The visible page box and rotation, for drawing upright on the displayed page.
+struct PageGeometry {
+    x0: f32,
+    y0: f32,
+    /// Width and height as displayed (after `/Rotate`).
+    w: f32,
+    h: f32,
+    rotate: i64,
+}
+
+impl PageGeometry {
+    fn of(doc: &Document, page: ObjectId) -> Result<Self> {
+        let d = doc.get_dictionary(page)?;
+        let bx = d
+            .get(b"CropBox")
+            .or_else(|_| d.get(b"MediaBox"))
+            .and_then(Object::as_array)
+            .context("page has no MediaBox")?;
+        let n: Vec<f32> = bx
+            .iter()
+            .map(|o| match doc.dereference(o) {
+                Ok((_, o)) => o
+                    .as_float()
+                    .or_else(|_| o.as_i64().map(|i| i as f32))
+                    .unwrap_or(0.0),
+                Err(_) => 0.0,
+            })
+            .collect();
+        if n.len() < 4 {
+            bail!("bad page box");
+        }
+        let (x0, y0) = (n[0].min(n[2]), n[1].min(n[3]));
+        let (bw, bh) = ((n[2] - n[0]).abs(), (n[3] - n[1]).abs());
+        let rotate = d
+            .get(b"Rotate")
+            .and_then(Object::as_i64)
+            .unwrap_or(0)
+            .rem_euclid(360);
+        let (w, h) = if rotate % 180 == 0 {
+            (bw, bh)
+        } else {
+            (bh, bw)
+        };
+        Ok(Self {
+            x0,
+            y0,
+            w,
+            h,
+            rotate,
+        })
+    }
+
+    /// `cm` operands mapping displayed coordinates (origin bottom-left) to page space.
+    fn cm(&self) -> String {
+        let (x0, y0) = (self.x0, self.y0);
+        let (bw, bh) = if self.rotate % 180 == 0 {
+            (self.w, self.h)
+        } else {
+            (self.h, self.w)
+        };
+        let m = match self.rotate {
+            90 => [0.0, 1.0, -1.0, 0.0, x0 + bw, y0],
+            180 => [-1.0, 0.0, 0.0, -1.0, x0 + bw, y0 + bh],
+            270 => [0.0, -1.0, 1.0, 0.0, x0, y0 + bh],
+            _ => [1.0, 0.0, 0.0, 1.0, x0, y0],
+        };
+        m.iter()
+            .map(|v| format!("{v:.2}"))
+            .collect::<Vec<_>>()
+            .join(" ")
+    }
+}
+
+/// Approximate Helvetica width (in points) of `s` at `size`.
+fn text_width(s: &str, size: f32) -> f32 {
+    s.chars()
+        .map(|c| match c {
+            ' ' | '/' | 'i' | 'l' | 'j' | 'I' | '.' | ',' => 0.278,
+            'f' | 't' | 'r' => 0.333,
+            'm' | 'w' => 0.833,
+            'M' | 'W' => 0.9,
+            c if c.is_ascii_digit() => 0.556,
+            c if c.is_uppercase() => 0.68,
+            _ => 0.556,
+        })
+        .sum::<f32>()
+        * size
+}
+
+/// A hex string in WinAnsi (Latin-1 range; anything else becomes `?`).
+fn pdf_text(s: &str) -> String {
+    let hex: String = s
+        .chars()
+        .map(|c| {
+            if (c as u32) < 256 {
+                c as u32
+            } else {
+                '?' as u32
+            }
+        })
+        .map(|b| format!("{b:02X}"))
+        .collect();
+    format!("<{hex}>")
+}
+
+/// Make `/category /name` point at `obj` in the page's resources.
+fn add_resource(
+    doc: &mut Document,
+    page: ObjectId,
+    category: &[u8],
+    name: &str,
+    obj: ObjectId,
+) -> Result<()> {
+    // Resources may be inline or shared by reference; categories likewise.
+    let res = match doc.get_dictionary(page)?.get(b"Resources") {
+        Ok(Object::Reference(id)) => Some(*id),
+        Ok(Object::Dictionary(_)) => None,
+        _ => {
+            doc.get_dictionary_mut(page)?
+                .set("Resources", Dictionary::new());
+            None
+        }
+    };
+    let cat_ref = {
+        let res_dict = match res {
+            Some(id) => doc.get_dictionary_mut(id)?,
+            None => doc
+                .get_dictionary_mut(page)?
+                .get_mut(b"Resources")?
+                .as_dict_mut()?,
+        };
+        match res_dict.get(category) {
+            Ok(Object::Reference(id)) => Some(*id),
+            Ok(Object::Dictionary(_)) => None,
+            _ => {
+                res_dict.set(category, Dictionary::new());
+                None
+            }
+        }
+    };
+    let cat = match cat_ref {
+        Some(id) => doc.get_dictionary_mut(id)?,
+        None => {
+            let res_dict = match res {
+                Some(id) => doc.get_dictionary_mut(id)?,
+                None => doc
+                    .get_dictionary_mut(page)?
+                    .get_mut(b"Resources")?
+                    .as_dict_mut()?,
+            };
+            res_dict.get_mut(category)?.as_dict_mut()?
+        }
+    };
+    cat.set(name, Object::Reference(obj));
+    Ok(())
+}
+
+/// Draw `ops` over the page: the original content is wrapped in q/Q so its graphics
+/// state can't leak into ours.
+fn overlay(doc: &mut Document, page: ObjectId, ops: Vec<u8>) -> Result<()> {
+    let open = doc.add_object(Stream::new(Dictionary::new(), b"q\n".to_vec()));
+    let close = doc.add_object(Stream::new(Dictionary::new(), b"\nQ\n".to_vec()));
+    let stamp = doc.add_object(Stream::new(Dictionary::new(), ops));
+    let d = doc.get_dictionary_mut(page)?;
+    let mut contents = vec![Object::Reference(open)];
+    match d.get(b"Contents") {
+        Ok(Object::Array(a)) => contents.extend(a.iter().cloned()),
+        Ok(o @ Object::Reference(_)) => contents.push(o.clone()),
+        _ => {}
+    }
+    contents.extend([Object::Reference(close), Object::Reference(stamp)]);
+    d.set("Contents", contents);
+    Ok(())
+}
+
+struct Protect {
+    spec: OpSpec,
+}
+
+impl Operation for Protect {
+    fn spec(&self) -> &OpSpec {
+        &self.spec
+    }
+    fn run(&self, ctx: &OpContext) -> Result<Vec<PathBuf>> {
+        use lopdf::encryption::crypt_filters::{Aes256CryptFilter, CryptFilter};
+        use lopdf::{EncryptionState, EncryptionVersion, Permissions};
+        let password = ctx.params.str("password").unwrap_or("");
+        if password.is_empty() {
+            bail!("type a password");
+        }
+        if let Some(confirm) = ctx.params.get("confirm").and_then(Value::as_str) {
+            if confirm != password {
+                bail!("the passwords don't match");
+            }
+        }
+        let mut doc = load(ctx.input())?;
+        doc.compress();
+        let mut key = [0u8; 32];
+        getrandom::fill(&mut key).map_err(|e| anyhow::anyhow!("no randomness: {e}"))?;
+        let filter: std::sync::Arc<dyn CryptFilter> = std::sync::Arc::new(Aes256CryptFilter);
+        let state = EncryptionState::try_from(EncryptionVersion::V5 {
+            encrypt_metadata: true,
+            crypt_filters: std::collections::BTreeMap::from([(b"StdCF".to_vec(), filter)]),
+            file_encryption_key: &key,
+            stream_filter: b"StdCF".to_vec(),
+            string_filter: b"StdCF".to_vec(),
+            owner_password: password,
+            user_password: password,
+            permissions: Permissions::all(),
+        })
+        .context("setting up encryption")?;
+        doc.encrypt(&state).context("encrypting")?;
+        ctx.progress.set(0.7);
+        let out = ctx.sink.file(ctx.input(), "pdf")?;
+        // Plain cross-reference table: objects were encrypted one by one, so they
+        // mustn't be packed into (unencrypted) object streams afterwards.
+        let mut f = std::io::BufWriter::new(std::fs::File::create(out.path())?);
+        doc.save_to(&mut f).context("writing PDF")?;
+        drop(f);
+        Ok(vec![out.commit()?])
+    }
+}
+
+struct Unlock {
+    spec: OpSpec,
+}
+
+impl Operation for Unlock {
+    fn spec(&self) -> &OpSpec {
+        &self.spec
+    }
+    fn run(&self, ctx: &OpContext) -> Result<Vec<PathBuf>> {
+        let input = ctx.input();
+        let mut doc =
+            Document::load(input).with_context(|| format!("opening {}", input.display()))?;
+        if !doc.is_encrypted() {
+            bail!("this PDF isn't password-protected");
+        }
+        let out = ctx.sink.file(input, "pdf")?;
+        if doc.encryption_state.is_some() {
+            // Opens without a password (only printing/copying locked): lopdf already
+            // decrypted it, so dropping the security handler keeps everything else.
+            if let Ok(id) = doc.trailer.get(b"Encrypt").and_then(Object::as_reference) {
+                doc.objects.remove(&id);
+            }
+            doc.trailer.remove(b"Encrypt");
+            doc.encryption_state = None;
+            save(&mut doc, out.path())?;
+        } else {
+            // Needs the password to open: PDFium reads it, and its pages go into a new,
+            // unprotected document.
+            let password = ctx.params.str("password").unwrap_or("");
+            if password.is_empty() {
+                bail!("this PDF needs its password to open");
+            }
+            let pdfium = super::lib::pdfium()?;
+            let src = pdfium
+                .load_pdf_from_file(input, Some(password))
+                .map_err(|e| match e {
+                    pdfium_render::prelude::PdfiumError::PdfiumLibraryInternalError(
+                        pdfium_render::prelude::PdfiumInternalError::PasswordError,
+                    ) => anyhow::anyhow!("wrong password"),
+                    e => anyhow::anyhow!("opening the PDF: {e}"),
+                })?;
+            ctx.progress.set(0.4);
+            let mut copy = pdfium.create_new_pdf()?;
+            copy.pages_mut().append(&src)?;
+            copy.save_to_file(out.path())?;
         }
         Ok(vec![out.commit()?])
     }

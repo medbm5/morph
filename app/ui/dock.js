@@ -54,7 +54,7 @@
       const item = i >= 0 ? ring.item(i) : null;
       if (!item) { expand(false); return; }
       if (item.disabled) { invoke('open_components', { focus: item.component || null }); expand(false); return; }
-      if (item.editor) { invoke('open_editor', { op: item.id, paths: e.paths || paths }); expand(false); return; }
+      if (item.editor && !item.quick) { invoke('open_editor', { op: item.id, paths: e.paths || paths }); expand(false); return; }
       busy = true;
       ring.collapse();
       const id = await invoke('run_op', { op: item.id, paths: e.paths || paths });

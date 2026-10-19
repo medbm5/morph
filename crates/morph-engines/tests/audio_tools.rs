@@ -111,30 +111,6 @@ fn every_audio_tool_output_plays() {
     assert!(auto_dur < dur - 2.0, "silence trimmed: {dur} → {auto_dur}");
     plays(&auto);
 
-    let mono = run("audio.channels", &src, Params::new().with("layout", "mono"));
-    assert_eq!(ffmpeg::probe(&mono).unwrap().audio.unwrap().channels, 1);
-    plays(&mono);
-    let st = run(
-        "audio.channels",
-        &src,
-        Params::new()
-            .with("layout", "stereo")
-            .with("left_gain", -6.0),
-    );
-    assert_eq!(ffmpeg::probe(&st).unwrap().audio.unwrap().channels, 2);
-    plays(&st);
-
-    let b = run(
-        "audio.bleep",
-        &src,
-        Params::new().with(
-            "ranges",
-            serde_json::json!([{ "start": 2, "end": 3 }, { "start": "00:00:05", "end": "5.5" }]),
-        ),
-    );
-    assert!((ffmpeg::probe(&b).unwrap().duration - dur).abs() < 0.1);
-    plays(&b);
-
     let v = run(
         "audio.visualize",
         &src,

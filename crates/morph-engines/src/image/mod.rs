@@ -1,5 +1,5 @@
-//! Image engine: conversions between raster formats, SVG and HEIC input, and
-//! images → PDF.
+//! Image engine: conversions between raster formats, SVG and HEIC input,
+//! images → PDF and images → ICO.
 
 pub mod adjust;
 pub mod compose;
@@ -40,8 +40,6 @@ pub fn register(reg: &mut Registry) {
         ("webp", "WebP", 3),
         ("avif", "AVIF", 4),
         ("tiff", "TIFF", 5),
-        ("bmp", "BMP", 6),
-        ("gif", "GIF", 8),
     ];
     for (ext, label, order) in formats {
         let mut spec = OpSpec::convert(ext, label, INPUTS).order(order);
@@ -78,6 +76,10 @@ pub fn register(reg: &mut Registry) {
 
     tools::register(reg);
     tools2::register(reg);
+
+    reg.register(ToIco {
+        spec: OpSpec::convert("ico", "ICO", INPUTS).order(9),
+    });
 
     reg.register(ToPdf {
         spec: OpSpec::convert("pdf", "PDF", INPUTS)
@@ -167,6 +169,63 @@ impl Operation for ToPdf {
             .collect();
         let out = ctx.sink.file(ctx.input(), "pdf")?;
         pdf_out::images_to_pdf(&items, out.path(), size, ctx.progress)?;
+        Ok(vec![out.commit()?])
+    }
+}
+
+/// Icon sizes written into an ICO, up to the source's size (16 px at least).
+const ICO_SIZES: &[u32] = &[16, 24, 32, 48, 64, 128, 256];
+
+/// Image → multi-size ICO for favicons and app icons. Non-square images are
+/// centred on a transparent square.
+struct ToIco {
+    spec: OpSpec,
+}
+
+impl Operation for ToIco {
+    fn spec(&self) -> &OpSpec {
+        &self.spec
+    }
+
+    fn run(&self, ctx: &OpContext) -> Result<Vec<PathBuf>> {
+        use ::image::codecs::ico::{IcoEncoder, IcoFrame};
+        use ::image::{imageops, GenericImageView, RgbaImage};
+        let input = ctx.input();
+        let img = decode::decode(input, ctx.kind())?;
+        let (w, h) = img.dimensions();
+        let largest = w.max(h);
+        let mut frames = Vec::new();
+        for &size in ICO_SIZES
+            .iter()
+            .filter(|&&s| s <= largest || s == ICO_SIZES[0])
+        {
+            ctx.progress.check()?;
+            let f = size as f64 / largest as f64;
+            let (fw, fh) = (
+                ((w as f64 * f).round() as u32).max(1),
+                ((h as f64 * f).round() as u32).max(1),
+            );
+            let scaled = img
+                .resize_exact(fw, fh, imageops::FilterType::Lanczos3)
+                .to_rgba8();
+            let mut square = RgbaImage::new(size, size);
+            imageops::overlay(
+                &mut square,
+                &scaled,
+                ((size - fw) / 2).into(),
+                ((size - fh) / 2).into(),
+            );
+            frames.push(IcoFrame::as_png(
+                square.as_raw(),
+                size,
+                size,
+                ::image::ExtendedColorType::Rgba8,
+            )?);
+        }
+        let out = ctx.sink.file(input, "ico")?;
+        let file = std::io::BufWriter::new(std::fs::File::create(out.path())?);
+        IcoEncoder::new(file).encode_images(&frames)?;
+        ctx.progress.set(1.0);
         Ok(vec![out.commit()?])
     }
 }

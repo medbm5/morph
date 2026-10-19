@@ -1,4 +1,4 @@
-/* Audio editor (Normalize, Visualizer, Trim, Channels, Bleep): waveform view with range
+/* Audio editor (Normalize, Visualizer, Trim): waveform view with range
    selection; before/after loudness meters; A/B listening against a rendered preview. */
 (function () {
   'use strict';
@@ -22,7 +22,6 @@
     const dur = info.duration;
     const peaks = await ctx.invoke('audio_peaks', { path, buckets: 1200 });
     let sel = { a: 0, b: dur };
-    const ranges = [];
 
     function draw() {
       const r = canvas.getBoundingClientRect();
@@ -36,7 +35,6 @@
       const x = (t) => (t / dur) * W;
       g.fillStyle = 'rgba(255,179,71,.16)';
       if (op === 'trim') g.fillRect(x(sel.a), 0, x(sel.b) - x(sel.a), H);
-      ranges.forEach((q) => { g.fillStyle = 'rgba(255,94,108,.35)'; g.fillRect(x(q.start), 0, x(q.end) - x(q.start), H); });
       g.strokeStyle = line; g.lineWidth = Math.max(1, devicePixelRatio);
       g.beginPath();
       peaks.forEach(([lo, hi], i) => { const px = (i / peaks.length) * W; g.moveTo(px, mid - hi * mid * 0.95); g.lineTo(px, mid - lo * mid * 0.95); });
@@ -85,26 +83,11 @@
     }
     if (op === 'normalize') { right.append(h('h2', { class: 'hud-panel', style: 'font-size:11px;letter-spacing:3px;color:var(--hud-line);margin:18px 0 6px', text: 'METERS' }), beforeM, afterM); meter(path, beforeM); }
 
-    const list = h('div', { class: 'hud-list' });
-    function renderRanges() {
-      list.textContent = '';
-      ranges.forEach((q, i) => {
-        const x = h('button', { type: 'button' }, h('span', { class: 'hud-mono', text: String(i + 1).padStart(2, '0') }), h('span', { text: `${mmss(q.start)} → ${mmss(q.end)}` }), h('span', { class: 'hud-mono', text: '✕' }));
-        x.addEventListener('click', () => { ranges.splice(i, 1); renderRanges(); draw(); });
-        list.append(x);
-      });
-    }
-    if (op === 'bleep') {
-      const add = h('button', { class: 'hud-btn small', type: 'button', text: 'BLEEP SELECTION' });
-      add.addEventListener('click', () => { if (sel.b - sel.a >= 0.05 && sel.b - sel.a < dur) { ranges.push({ start: +sel.a.toFixed(3), end: +sel.b.toFixed(3) }); renderRanges(); draw(); } });
-      right.append(h('p', { class: 'ed-note', text: 'Drag on the waveform to select, then add it.' }), add, list);
-    }
     if (op === 'trim') right.append(h('p', { class: 'ed-note', text: 'Drag on the waveform to choose what to keep.' }));
 
     function collect() {
       const p = Object.assign({}, params);
       if (op === 'trim') Object.assign(p, { start: String(sel.a), end: String(sel.b) });
-      if (op === 'bleep') p.ranges = ranges;
       return p;
     }
     const save = h('button', { class: 'hud-btn primary', type: 'button', text: `SAVE · ${spec.label.toUpperCase()}` });

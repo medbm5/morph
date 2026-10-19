@@ -1,4 +1,4 @@
-//! S5: Compress, Crop, Metadata.
+//! S5: Compress, Resize, Crop, Rotate, Metadata.
 
 use image::GenericImageView;
 use morph_core::{Job, Params, Runner};
@@ -242,5 +242,61 @@ fn strip_png_and_webp() {
             "{ext}"
         );
         image::open(&out[0]).unwrap();
+    }
+}
+
+#[test]
+fn resize_by_percent_and_box() {
+    let d = tempfile::tempdir().unwrap();
+    let src = d.path().join("photo.jpg");
+    big_jpeg(&src, 800, 600);
+    let half = run("image.resize", &src, Params::new());
+    assert_eq!(half[0].file_name().unwrap(), "photo Resized.jpg");
+    assert_eq!(image::image_dimensions(&half[0]).unwrap(), (400, 300));
+    let w = run("image.resize", &src, Params::new().with("width", 1600));
+    assert_eq!(
+        image::image_dimensions(&w[0]).unwrap(),
+        (1600, 1200),
+        "upscales"
+    );
+    let fit = run(
+        "image.resize",
+        &src,
+        Params::new().with("width", 200).with("height", 200),
+    );
+    assert_eq!(
+        image::image_dimensions(&fit[0]).unwrap(),
+        (200, 150),
+        "fits the box"
+    );
+}
+
+#[test]
+fn rotate_and_flip() {
+    let d = tempfile::tempdir().unwrap();
+    let src = d.path().join("mark.png");
+    // Red top-left pixel on a 4×2 image.
+    let mut img = image::RgbaImage::from_pixel(4, 2, image::Rgba([0, 0, 255, 255]));
+    img.put_pixel(0, 0, image::Rgba([255, 0, 0, 255]));
+    img.save(&src).unwrap();
+    let red = |p: &Path| {
+        let i = image::open(p).unwrap().to_rgba8();
+        let pos = i
+            .enumerate_pixels()
+            .find(|(_, _, px)| px[0] == 255)
+            .unwrap();
+        (i.dimensions(), (pos.0, pos.1))
+    };
+    let cases = [
+        ("right", ((2, 4), (1, 0))),
+        ("left", ((2, 4), (0, 3))),
+        ("180", ((4, 2), (3, 1))),
+        ("flip-horizontal", ((4, 2), (3, 0))),
+        ("flip-vertical", ((4, 2), (0, 1))),
+    ];
+    for (turn, want) in cases {
+        let out = run("image.rotate", &src, Params::new().with("turn", turn));
+        assert_eq!(red(&out[0]), want, "{turn}");
+        std::fs::remove_file(&out[0]).unwrap();
     }
 }

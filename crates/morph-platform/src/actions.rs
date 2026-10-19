@@ -1,4 +1,4 @@
-//! The Actions ring: Share, Float, Copy, Move to…, Copy path, Open in terminal.
+//! The Actions ring: Share, Float, Move to…, Copy path, Open in terminal.
 //! Works on files, folders and mixed selections. These run in the app process; they
 //! never write next to the source and aren't recorded for Undo.
 
@@ -40,11 +40,6 @@ pub fn register(reg: &mut Registry, hooks: Hooks) {
         hooks: hooks.clone(),
     });
     reg.register(Action {
-        spec: spec("action.copy", "Copy", 3),
-        kind: Kind::Copy,
-        hooks: hooks.clone(),
-    });
-    reg.register(Action {
         spec: spec("action.move", "Move", 4),
         kind: Kind::Move,
         hooks: hooks.clone(),
@@ -65,7 +60,6 @@ pub fn register(reg: &mut Registry, hooks: Hooks) {
 enum Kind {
     Share,
     Float,
-    Copy,
     Move,
     CopyPath,
     Terminal,
@@ -92,7 +86,6 @@ impl Operation for Action {
     fn run(&self, ctx: &OpContext) -> Result<Vec<PathBuf>> {
         let paths = &ctx.inputs;
         match self.kind {
-            Kind::Copy => copy_files(paths)?,
             Kind::CopyPath => copy_text(&paths_text(paths))?,
             Kind::Terminal => open_terminal(&terminal_dir(paths))?,
             Kind::Share => match &self.hooks.share {

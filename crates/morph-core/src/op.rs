@@ -84,6 +84,8 @@ pub enum ParamKind {
     Time,
     /// Free-form JSON (editor state such as annotation shapes or redaction boxes).
     Json,
+    /// Text entered masked (PDF passwords). Never written to history.
+    Password,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -135,6 +137,16 @@ pub struct OpSpec {
     pub component: Option<String>,
     /// Lower sorts first in the ring.
     pub order: i32,
+    /// Runs from recipes, editors and the CLI but isn't a ring segment of its own.
+    #[serde(default)]
+    pub unlisted: bool,
+    /// Extra short names for recipes and `morph tool` (`bg` for Add BG).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub aliases: Vec<String>,
+    /// Dropped on the drag ring, runs at once with its defaults; the ring window
+    /// (file-manager menu) still opens its editor for the other choices.
+    #[serde(default)]
+    pub quick: bool,
 }
 
 impl OpSpec {
@@ -152,6 +164,9 @@ impl OpSpec {
             editor: None,
             component: None,
             order: 100,
+            unlisted: false,
+            aliases: Vec::new(),
+            quick: false,
         }
     }
 
@@ -169,6 +184,9 @@ impl OpSpec {
             editor: None,
             component: None,
             order: 100,
+            unlisted: false,
+            aliases: Vec::new(),
+            quick: false,
         }
     }
 
@@ -185,6 +203,9 @@ impl OpSpec {
             editor: None,
             component: None,
             order: 100,
+            unlisted: false,
+            aliases: Vec::new(),
+            quick: false,
         }
     }
 
@@ -212,10 +233,31 @@ impl OpSpec {
         self.label = l.into();
         self
     }
+    pub fn unlisted(mut self) -> Self {
+        self.unlisted = true;
+        self
+    }
+    pub fn alias(mut self, a: &str) -> Self {
+        self.aliases.push(a.into());
+        self
+    }
+    pub fn quick(mut self) -> Self {
+        self.quick = true;
+        self
+    }
 
     /// Does this op accept a file of this kind?
     pub fn accepts_kind(&self, kind: &Kind) -> bool {
         self.accepts.iter().any(|p| kind.matches(p))
+    }
+
+    /// `params` without password values, safe to keep in history.
+    pub fn without_secrets(&self, params: &Params) -> Params {
+        let mut out = params.clone();
+        for p in self.params.iter().filter(|p| p.kind == ParamKind::Password) {
+            out.0.remove(&p.key);
+        }
+        out
     }
 
     /// Default values for every parameter.
@@ -407,6 +449,35 @@ pub trait Operation: Send + Sync {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn passwords_stay_out_of_history() {
+        let spec = OpSpec::tool(
+            "pdf.protect",
+            "Protect",
+            "Protected",
+            &["application/pdf"],
+            OutputKind::SameAsInput,
+        )
+        .param(ParamSpec::new(
+            "password",
+            "Password",
+            ParamKind::Password,
+            Value::from(""),
+        ))
+        .param(ParamSpec::new(
+            "level",
+            "Level",
+            ParamKind::Text,
+            Value::from(""),
+        ));
+        let p = Params::new()
+            .with("password", "s3cret")
+            .with("level", "high");
+        let kept = spec.without_secrets(&p);
+        assert!(kept.get("password").is_none());
+        assert_eq!(kept.str("level"), Some("high"));
+    }
 
     #[test]
     fn sizes() {

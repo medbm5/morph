@@ -37,7 +37,7 @@ Start dragging a file in Explorer (or your Linux file manager). **Tap** <kbd>Shi
 
 ![Adding a background to a screenshot from the Tools ring](docs/assets/demo-tools.webp)
 
-Compress to a target size, crop, annotate, add a background, blur faces, remove a background, trim a video, normalise audio, merge PDFs and more. Tools that need adjusting open a full editor with a live preview.
+Compress to a target size, resize, crop, rotate, annotate, add a background, blur faces, remove a background, trim or mute a video, normalise audio, merge, split, number, watermark or password-protect PDFs and more. Tools that need adjusting open a full editor with a live preview.
 
 ### 3. Chain steps together
 
@@ -49,7 +49,7 @@ Drag the new file again to keep going. A chain you use often can be saved as a *
 
 ![Parking files on the Float shelf](docs/assets/demo-actions.webp)
 
-Share, copy, move, copy the path, open a terminal there, or park files on the **Float** shelf to drop them somewhere later.
+Share, move to a folder, copy the path, open a terminal there, or park files on the **Float** shelf to drop them somewhere later.
 
 ### Handy keys while the ring is open
 

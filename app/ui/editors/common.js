@@ -46,6 +46,11 @@
         break;
       case 'json':
         return null; // managed by the custom editor
+      case 'password':
+        input = h('input', { type: 'password', autocomplete: 'off' });
+        input.value = value == null ? '' : value;
+        input.addEventListener('input', () => onChange(input.value));
+        break;
       default:
         input = h('input', { type: 'text' });
         input.value = value == null ? '' : value;

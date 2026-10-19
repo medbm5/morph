@@ -56,8 +56,8 @@
     Collage: 'Collage', Redact: 'Masquer', 'Remove BG': 'Détourer', Metadata: 'Métadonnées', 'Strip metadata': 'Effacer les métadonnées',
     'Copy text': 'Copier le texte', 'Searchable PDF': 'PDF interrogeable', Merge: 'Fusionner', Organize: 'Organiser',
     Extract: 'Extraire', Trim: 'Couper', Speed: 'Vitesse', Join: 'Assembler', Split: 'Scinder', 'Save frames': 'Extraire les images',
-    Normalize: 'Normaliser', Visualizer: 'Visualiseur', Channels: 'Canaux', Bleep: 'Bip',
-    Copy: 'Copier', Move: 'Déplacer', Share: 'Partager', Float: 'Étagère', 'Copy path': 'Copier le chemin', Terminal: 'Terminal',
+    Normalize: 'Normaliser', Visualizer: 'Visualiseur', Resize: 'Redimensionner', Rotate: 'Pivoter', Mute: 'Couper le son',
+    Protect: 'Protéger', Unlock: 'Déverrouiller', 'Page numbers': 'Numéroter les pages', Watermark: 'Filigrane', Move: 'Déplacer', Share: 'Partager', Float: 'Étagère', 'Copy path': 'Copier le chemin', Terminal: 'Terminal',
   };
 
   let lang = 'en';

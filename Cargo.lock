@@ -3306,6 +3306,7 @@ dependencies = [
  "csv",
  "docx-rs",
  "flate2",
+ "getrandom 0.3.4",
  "hex",
  "image",
  "kamadak-exif",

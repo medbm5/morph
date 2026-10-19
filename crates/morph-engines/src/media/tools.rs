@@ -1,4 +1,4 @@
-//! Video tools (S10): Trim, Crop, Speed, Join, Save frames, Split, Redact.
+//! Video tools (S10): Trim, Crop, Rotate, Mute, Speed, Join, Save frames, Split, Redact.
 //! Audio tools (S11) live in `audio.rs`.
 
 use super::ffmpeg::{self, Probe};
@@ -60,8 +60,35 @@ pub fn register(reg: &mut Registry) {
             ),
     });
     reg.register(Video {
+        kind: Kind::Rotate,
+        spec: {
+            let mut s = tool("video.rotate", "Rotate", "Rotated", 4).param(ParamSpec::new(
+                "turn",
+                "Turn",
+                ParamKind::Choice {
+                    options: crate::image::tools::ROTATIONS
+                        .iter()
+                        .map(|s| s.to_string())
+                        .collect(),
+                },
+                json!("right"),
+            ));
+            s.editor = Some("form".into());
+            s.quick = true;
+            s
+        },
+    });
+    reg.register(Video {
+        kind: Kind::Mute,
+        spec: {
+            let mut s = tool("video.mute", "Mute", "Muted", 5);
+            s.editor = None;
+            s
+        },
+    });
+    reg.register(Video {
         kind: Kind::Speed,
-        spec: tool("video.speed", "Speed", "Speed", 4).param(ParamSpec::new(
+        spec: tool("video.speed", "Speed", "Speed", 8).param(ParamSpec::new(
             "factor",
             "Speed ×",
             ParamKind::Float {
@@ -74,12 +101,12 @@ pub fn register(reg: &mut Registry) {
     });
     reg.register(Video {
         kind: Kind::Join,
-        spec: tool("video.join", "Join", "Joined", 5).arity(Arity::All),
+        spec: tool("video.join", "Join", "Joined", 7).arity(Arity::All),
     });
     reg.register(Video {
         kind: Kind::Frames,
         spec: {
-            let mut s = tool("video.frames", "Save frames", "Frames", 6).param(
+            let mut s = tool("video.frames", "Save frames", "Frames", 9).param(
                 ParamSpec::new("times", "At (seconds)", ParamKind::Text, json!("0"))
                     .help("Comma-separated, e.g. 1.5, 3, 12"),
             );
@@ -90,7 +117,7 @@ pub fn register(reg: &mut Registry) {
     reg.register(Video {
         kind: Kind::Split,
         spec: {
-            let mut s = tool("video.split", "Split", "Parts", 7)
+            let mut s = tool("video.split", "Split", "Parts", 6)
                 .param(ParamSpec::new(
                     "points",
                     "Split at (seconds)",
@@ -109,7 +136,7 @@ pub fn register(reg: &mut Registry) {
     });
     reg.register(Video {
         kind: Kind::Redact,
-        spec: tool("video.redact", "Redact", "Redacted", 8)
+        spec: tool("video.redact", "Redact", "Redacted", 10)
             .param(ParamSpec::new(
                 "regions",
                 "Regions",
@@ -132,6 +159,8 @@ pub fn register(reg: &mut Registry) {
 enum Kind {
     Trim,
     Crop,
+    Rotate,
+    Mute,
     Speed,
     Join,
     Frames,
@@ -215,6 +244,17 @@ fn encode_args(ext: &str, p: &Probe) -> Result<Vec<String>> {
     Ok(out)
 }
 
+/// Encoder args with the audio copied untouched instead of re-encoded.
+fn copy_audio(mut enc: Vec<String>) -> Vec<String> {
+    if let Some(i) = enc.iter().position(|a| a == "-c:a") {
+        enc.splice(i..(i + 2).min(enc.len()), s(&["-c:a", "copy"]));
+        if let Some(j) = enc.iter().position(|a| a == "-b:a") {
+            enc.drain(j..j + 2);
+        }
+    }
+    enc
+}
+
 impl Operation for Video {
     fn spec(&self) -> &OpSpec {
         &self.spec
@@ -278,15 +318,29 @@ impl Operation for Video {
                 );
                 args.extend(["-filter:v".into(), format!("crop={w}:{h}:{x}:{y}")]);
                 args.extend(s(&["-map", "0:v:0", "-map", "0:a:0?"]));
-                let mut enc = encode_args(&ext, &p)?;
-                // Keep the audio untouched.
-                if let Some(i) = enc.iter().position(|a| a == "-c:a") {
-                    enc.splice(i..(i + 2).min(enc.len()), s(&["-c:a", "copy"]));
-                    if let Some(j) = enc.iter().position(|a| a == "-b:a") {
-                        enc.drain(j..j + 2);
-                    }
+                args.extend(copy_audio(encode_args(&ext, &p)?));
+                return Ok(vec![run_ff(ctx, input, &ext, args, duration)?]);
+            }
+            Kind::Rotate => {
+                let filter = match ctx.params.str("turn").unwrap_or("right") {
+                    "right" => "transpose=clock",
+                    "left" => "transpose=cclock",
+                    "180" => "hflip,vflip",
+                    "flip-horizontal" => "hflip",
+                    "flip-vertical" => "vflip",
+                    other => bail!("unknown turn `{other}`"),
+                };
+                args.extend(["-filter:v".into(), filter.into()]);
+                args.extend(s(&["-map", "0:v:0", "-map", "0:a:0?"]));
+                args.extend(copy_audio(encode_args(&ext, &p)?));
+                return Ok(vec![run_ff(ctx, input, &ext, args, duration)?]);
+            }
+            Kind::Mute => {
+                // The picture is copied as is: fast and lossless.
+                args.extend(s(&["-map", "0:v:0", "-c:v", "copy", "-an"]));
+                if matches!(ext.as_str(), "mp4" | "mov") {
+                    args.extend(s(&["-movflags", "+faststart"]));
                 }
-                args.extend(enc);
                 return Ok(vec![run_ff(ctx, input, &ext, args, duration)?]);
             }
             Kind::Speed => {

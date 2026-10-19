@@ -50,7 +50,7 @@ fn every_input_to_every_output() {
     let reg = morph_engines::registry();
     let runner = Runner::new(&reg);
     let inputs = fixtures(dir.path());
-    let outputs = ["jpg", "png", "webp", "tiff", "avif", "bmp", "gif", "pdf"];
+    let outputs = ["jpg", "png", "webp", "tiff", "avif", "ico", "pdf"];
 
     for input in &inputs {
         let before = hash(input);
@@ -72,6 +72,13 @@ fn every_input_to_every_output() {
             );
             if out == "pdf" {
                 assert!(std::fs::read(produced).unwrap().starts_with(b"%PDF-"));
+            } else if out == "ico" {
+                // Largest icon frame: the long side (64 px), on a square canvas.
+                assert_eq!(
+                    image::image_dimensions(produced).unwrap(),
+                    (W, W),
+                    "{in_ext} → ico"
+                );
             } else if out != "avif" || morph_engines::image::heif::available() {
                 let kind = morph_core::detect(produced).unwrap();
                 let back = morph_engines::image::decode::decode(produced, &kind).unwrap();

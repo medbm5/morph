@@ -11,7 +11,7 @@ rust-version.workspace = true
 [features]
 default = ["image", "pdf", "ml", "media", "office", "archive"]
 image = ["dep:image", "dep:webp", "dep:resvg", "dep:lopdf", "dep:oxipng", "dep:kamadak-exif", "dep:little_exif", "dep:rayon"]
-pdf = ["image", "dep:pdfium-render", "dep:docx-rs"]
+pdf = ["image", "dep:pdfium-render", "dep:docx-rs", "dep:getrandom"]
 ml = ["image", "dep:ort"]
 media = []
 archive = ["dep:zip", "dep:tar", "dep:sevenz-rust2"]
@@ -40,6 +40,7 @@ tar = { version = "0.4", optional = true }
 sevenz-rust2 = { version = "0.20", optional = true }
 ort = { version = "=2.0.0-rc.14", optional = true, default-features = false, features = ["std", "ndarray", "load-dynamic", "api-22"] }
 docx-rs = { version = "0.4", optional = true }
+getrandom = { version = "0.3", optional = true }
 flate2 = "1"
 
 [target.'cfg(windows)'.dependencies]

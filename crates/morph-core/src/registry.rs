@@ -97,11 +97,15 @@ impl Registry {
     }
 
     /// A tool or action by short name (`crop`, `compress`, `bg`, `strip`) for these inputs.
+    /// The closest match wins (see [`tool_rank`]), so reordering the ring never changes
+    /// what a saved recipe runs; ring order only breaks ties.
     pub fn find_tool(&self, name: &str, kinds: &[Kind]) -> Option<&Arc<dyn Operation>> {
         [Ring::Tools, Ring::Actions]
             .into_iter()
             .flat_map(|r| self.for_selection(kinds, r))
-            .find(|op| tool_matches(op.spec(), name))
+            .filter_map(|op| tool_rank(op.spec(), name).map(|r| (r, op)))
+            .min_by_key(|(r, _)| *r)
+            .map(|(_, op)| op)
     }
 
     /// Resolve a chain step: a concrete id, `convert:<ext>` or `tool:<name>`.
@@ -123,16 +127,28 @@ impl Registry {
 }
 
 /// Does `name` (case-insensitive, `-`/`_`/space equivalent) name this tool?
-/// Matches the id's last part (`image.crop` → `crop`), the label (`Add BG` → `add-bg`)
-/// or any word of the label (`bg`).
 pub fn tool_matches(spec: &OpSpec, name: &str) -> bool {
+    tool_rank(spec, name).is_some()
+}
+
+/// How closely `name` names this tool, best first: 0 the full id, 1 the id's last part
+/// (`image.crop` → `crop`) or an alias, 2 the label (`Add BG` → `add-bg`), 3 one word
+/// of the label (`bg`).
+pub fn tool_rank(spec: &OpSpec, name: &str) -> Option<u8> {
     let want = name.to_ascii_lowercase().replace([' ', '_'], "-");
-    if spec.id == name {
-        return true;
-    }
     let short = spec.id.rsplit('.').next().unwrap_or(&spec.id);
     let label = spec.label.to_ascii_lowercase().replace(' ', "-");
-    short == want || label == want || label.split('-').any(|w| w == want)
+    if spec.id == name {
+        Some(0)
+    } else if short == want || spec.aliases.contains(&want) {
+        Some(1)
+    } else if label == want {
+        Some(2)
+    } else if label.split('-').any(|w| w == want) {
+        Some(3)
+    } else {
+        None
+    }
 }
 
 fn is_identity(spec: &OpSpec, kinds: &[Kind]) -> bool {
@@ -217,6 +233,41 @@ mod tests {
             kind("pdf", "application/pdf", Family::Pdf),
         ];
         assert!(r.for_selection(&sel, Ring::Convert).is_empty());
+    }
+
+    #[test]
+    fn short_names_ignore_ring_order() {
+        let mut r = Registry::new();
+        let img = &["image/*"];
+        // Remove BG sorts first, but `bg` is Add BG's alias: an exact name beats a word.
+        r.register(Fake(
+            OpSpec::tool(
+                "image.removebg",
+                "Remove BG",
+                "No BG",
+                img,
+                OutputKind::SameAsInput,
+            )
+            .order(1),
+        ));
+        r.register(Fake(
+            OpSpec::tool(
+                "image.background",
+                "Add BG",
+                "BG",
+                img,
+                OutputKind::SameAsInput,
+            )
+            .order(2)
+            .alias("bg"),
+        ));
+        let png = [kind("png", "image/png", Family::Image)];
+        let id = |n: &str| r.find_tool(n, &png).map(|o| o.spec().id.clone());
+        assert_eq!(id("bg").as_deref(), Some("image.background"));
+        assert_eq!(id("remove-bg").as_deref(), Some("image.removebg"));
+        assert_eq!(id("remove").as_deref(), Some("image.removebg"));
+        assert_eq!(id("background").as_deref(), Some("image.background"));
+        assert_eq!(id("nope"), None);
     }
 
     #[test]

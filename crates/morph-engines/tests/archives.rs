@@ -35,7 +35,13 @@ fn check_tree(root: &Path) {
 fn round_trips() {
     let d = tempfile::tempdir().unwrap();
     let inputs = tree(d.path());
-    for op in ["archive.zip", "archive.tar", "archive.targz"] {
+    // TAR.GZ is only offered outside Windows.
+    let ops: &[&str] = if cfg!(windows) {
+        &["archive.zip"]
+    } else {
+        &["archive.zip", "archive.targz"]
+    };
+    for &op in ops {
         let ar = run(op, inputs.clone()).unwrap();
         assert!(
             ar.file_name()
@@ -50,6 +56,10 @@ fn round_trips() {
         check_tree(&out);
         std::fs::remove_dir_all(out).unwrap();
         std::fs::remove_file(ar).unwrap();
+    }
+    if cfg!(windows) {
+        assert!(morph_engines::registry().get("archive.targz").is_none());
+        return;
     }
     // One file to GZIP keeps its name.
     let gz = run("archive.targz", vec![inputs[0].clone()]).unwrap();

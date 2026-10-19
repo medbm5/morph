@@ -183,7 +183,7 @@ fn process(app: &AppHandle, w: &WatchFolder, path: PathBuf) {
                         &label,
                         &job.inputs,
                         &report.outputs,
-                        &job.params,
+                        &op.spec().without_secrets(&job.params),
                     );
                 }
                 let _ = app.emit(

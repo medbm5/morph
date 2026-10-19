@@ -41,7 +41,7 @@ pub fn register(reg: &mut Registry) {
             INPUTS,
             OutputKind::SameAsInput,
         )
-        .order(3)
+        .order(13)
         .editor("edit")
         .param(float("exposure", "Exposure", -3.0, 3.0))
         .param(float("contrast", "Contrast", -1.0, 1.0))
@@ -63,7 +63,7 @@ pub fn register(reg: &mut Registry) {
             INPUTS,
             OutputKind::SameAsInput,
         )
-        .order(4)
+        .order(6)
         .editor("annotate")
         .param(ParamSpec::new(
             "shapes",
@@ -82,6 +82,7 @@ pub fn register(reg: &mut Registry) {
             OutputKind::Ext("png".into()),
         )
         .order(5)
+        .alias("bg")
         .editor("background")
         .param(ParamSpec::new(
             "kind",
@@ -154,7 +155,7 @@ pub fn register(reg: &mut Registry) {
             OutputKind::Ext("png".into()),
         )
         .arity(Arity::All)
-        .order(8)
+        .order(10)
         .editor("collage")
         .param(ParamSpec::new(
             "layout",

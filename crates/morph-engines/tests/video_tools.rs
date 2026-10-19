@@ -246,3 +246,37 @@ fn frames_split_redact() {
         "untouched outside the range"
     );
 }
+
+#[test]
+fn rotate_and_mute() {
+    if !ready() {
+        return;
+    }
+    let d = tempfile::tempdir().unwrap();
+    let src = clip(d.path(), "clip.mp4", "640x360", 2);
+
+    let r = run(
+        "video.rotate",
+        vec![src.clone()],
+        Params::new().with("turn", "right"),
+    );
+    assert_eq!(r.file_name().unwrap(), "clip Rotated.mp4");
+    let p = ffmpeg::probe(&r).unwrap();
+    let v = p.video.unwrap();
+    assert_eq!((v.width, v.height), (360, 640));
+    assert!(p.audio.is_some(), "sound kept");
+
+    let f = run(
+        "video.rotate",
+        vec![src.clone()],
+        Params::new().with("turn", "flip-horizontal"),
+    );
+    let v = ffmpeg::probe(&f).unwrap().video.unwrap();
+    assert_eq!((v.width, v.height), (640, 360));
+
+    let m = run("video.mute", vec![src.clone()], Params::new());
+    assert_eq!(m.file_name().unwrap(), "clip Muted.mp4");
+    let p = ffmpeg::probe(&m).unwrap();
+    assert!(p.audio.is_none(), "no sound");
+    near(frames(&m), 2.0 * FPS, "mute keeps every frame");
+}

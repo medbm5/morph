@@ -224,3 +224,228 @@ fn compress_shrinks_image_heavy_pdfs() {
     );
     assert_eq!(morph_engines::pdf::page_count(&out).unwrap(), 2);
 }
+
+fn run_err(op: &str, inputs: Vec<PathBuf>, params: Params) -> String {
+    let reg = morph_engines::registry();
+    let r = Runner::new(&reg).run(&Job::new(op, inputs).params(params), |_| {});
+    match r {
+        Ok(r) => {
+            assert!(!r.ok(), "{op} should fail");
+            format!("{:?}", r.errors)
+        }
+        Err(e) => e.to_string(),
+    }
+}
+
+#[test]
+fn split_into_single_pages_and_chunks() {
+    if !pdfium_ready() {
+        return;
+    }
+    let d = tempfile::tempdir().unwrap();
+    let src = d.path().join("doc.pdf");
+    make(&src, "S", 5, true);
+    let dir = run("pdf.split", vec![src.clone()], Params::new());
+    assert!(dir.is_dir());
+    let mut names: Vec<String> = std::fs::read_dir(&dir)
+        .unwrap()
+        .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
+        .collect();
+    names.sort();
+    assert_eq!(
+        names,
+        [
+            "Page 001.pdf",
+            "Page 002.pdf",
+            "Page 003.pdf",
+            "Page 004.pdf",
+            "Page 005.pdf"
+        ]
+    );
+    assert_eq!(page_texts(&dir.join("Page 004.pdf")), vec!["S page 4"]);
+
+    let dir = run(
+        "pdf.split",
+        vec![src.clone()],
+        Params::new().with("every", 2),
+    );
+    assert_eq!(
+        page_texts(&dir.join("Pages 001-002.pdf")),
+        vec!["S page 1", "S page 2"]
+    );
+    assert_eq!(page_texts(&dir.join("Page 005.pdf")), vec!["S page 5"]);
+
+    let err = run_err("pdf.split", vec![src], Params::new().with("every", 5));
+    assert!(err.contains("nothing to split"), "{err}");
+}
+
+#[test]
+fn protect_then_unlock() {
+    if !pdfium_ready() {
+        return;
+    }
+    let d = tempfile::tempdir().unwrap();
+    let src = d.path().join("doc.pdf");
+    make(&src, "P", 2, false);
+
+    let err = run_err(
+        "pdf.protect",
+        vec![src.clone()],
+        Params::new()
+            .with("password", "s3cret")
+            .with("confirm", "typo"),
+    );
+    assert!(err.contains("don't match"), "{err}");
+
+    let locked = run(
+        "pdf.protect",
+        vec![src.clone()],
+        Params::new()
+            .with("password", "s3cret")
+            .with("confirm", "s3cret"),
+    );
+    assert_eq!(locked.file_name().unwrap(), "doc Protected.pdf");
+    {
+        // A real reader refuses it without the password and opens it with it.
+        let pdfium = morph_engines::pdf::lib::pdfium().unwrap();
+        assert!(pdfium.load_pdf_from_file(&locked, None).is_err());
+        let doc = pdfium.load_pdf_from_file(&locked, Some("s3cret")).unwrap();
+        assert_eq!(doc.pages().len(), 2);
+    }
+
+    let err = run_err(
+        "pdf.unlock",
+        vec![locked.clone()],
+        Params::new().with("password", "nope"),
+    );
+    assert!(err.contains("wrong password"), "{err}");
+    let open = run(
+        "pdf.unlock",
+        vec![locked],
+        Params::new().with("password", "s3cret"),
+    );
+    assert_eq!(page_texts(&open), vec!["P page 1", "P page 2"]);
+    assert!(!Document::load(&open).unwrap().is_encrypted());
+
+    let err = run_err("pdf.unlock", vec![src], Params::new());
+    assert!(err.contains("isn't password-protected"), "{err}");
+}
+
+#[test]
+fn unlock_removes_owner_only_restrictions() {
+    use lopdf::encryption::crypt_filters::{Aes256CryptFilter, CryptFilter};
+    use lopdf::{EncryptionState, EncryptionVersion, Permissions};
+    if !pdfium_ready() {
+        return;
+    }
+    let d = tempfile::tempdir().unwrap();
+    let src = d.path().join("doc.pdf");
+    make(&src, "R", 2, false);
+    // Opens without a password, but printing and copying are locked.
+    let mut doc = Document::load(&src).unwrap();
+    let filter: std::sync::Arc<dyn CryptFilter> = std::sync::Arc::new(Aes256CryptFilter);
+    let state = EncryptionState::try_from(EncryptionVersion::V5 {
+        encrypt_metadata: true,
+        crypt_filters: std::collections::BTreeMap::from([(b"StdCF".to_vec(), filter)]),
+        file_encryption_key: &[7u8; 32],
+        stream_filter: b"StdCF".to_vec(),
+        string_filter: b"StdCF".to_vec(),
+        owner_password: "owner",
+        user_password: "",
+        permissions: Permissions::empty(),
+    })
+    .unwrap();
+    doc.encrypt(&state).unwrap();
+    let restricted = d.path().join("restricted.pdf");
+    doc.save(&restricted).unwrap();
+
+    let open = run("pdf.unlock", vec![restricted], Params::new());
+    assert!(!Document::load(&open).unwrap().is_encrypted());
+    assert_eq!(page_texts(&open), vec!["R page 1", "R page 2"]);
+}
+
+/// Dark pixels in a box of the rendered page, as fractions of the displayed page
+/// (x0, y0 from the top-left), so rotated pages are checked the way people see them.
+fn ink(p: &Path, page: i32, (x0, y0, x1, y1): (f32, f32, f32, f32)) -> usize {
+    use pdfium_render::prelude::*;
+    let pdfium = morph_engines::pdf::lib::pdfium().unwrap();
+    let doc = pdfium.load_pdf_from_file(p, None).unwrap();
+    let pg = doc.pages().get(page).unwrap();
+    let img = pg
+        .render_with_config(&PdfRenderConfig::new().set_target_width(600))
+        .unwrap()
+        .as_image()
+        .unwrap()
+        .to_luma8();
+    let (w, h) = (img.width() as f32, img.height() as f32);
+    let mut n = 0;
+    for y in (y0 * h) as u32..(y1 * h) as u32 {
+        for x in (x0 * w) as u32..(x1 * w) as u32 {
+            if img.get_pixel(x, y)[0] < 240 {
+                n += 1;
+            }
+        }
+    }
+    n
+}
+
+#[test]
+fn page_numbers_sit_upright_at_the_bottom() {
+    if !pdfium_ready() {
+        return;
+    }
+    let d = tempfile::tempdir().unwrap();
+    let src = d.path().join("doc.pdf");
+    make(&src, "N", 3, true);
+    // Page 2 turned sideways: its number must still read along the displayed bottom.
+    let turned = run(
+        "pdf.organize",
+        vec![src],
+        Params::new().with("pages", "1,2:90,3"),
+    );
+    let out = run(
+        "pdf.page-numbers",
+        vec![turned],
+        Params::new().with("style", "Page 1 of 9"),
+    );
+    let texts = page_texts(&out);
+    for (i, t) in texts.iter().enumerate() {
+        assert!(t.contains(&format!("N page {}", i + 1)), "{t}");
+        assert!(t.contains(&format!("Page {} of 3", i + 1)), "{t}");
+    }
+    for page in 0..3 {
+        let bottom = ink(&out, page, (0.3, 0.9, 0.7, 1.0));
+        let top = ink(&out, page, (0.3, 0.0, 0.7, 0.05));
+        assert!(bottom > 20, "page {page}: number at the bottom ({bottom})");
+        assert_eq!(top, 0, "page {page}: nothing at the top");
+    }
+}
+
+#[test]
+fn watermark_crosses_the_page() {
+    if !pdfium_ready() {
+        return;
+    }
+    let d = tempfile::tempdir().unwrap();
+    let src = d.path().join("doc.pdf");
+    make(&src, "W", 2, false);
+    let blank = ink(&src, 0, (0.3, 0.4, 0.7, 0.6));
+    let out = run(
+        "pdf.watermark",
+        vec![src],
+        Params::new().with("text", "DRAFT").with("opacity", 40),
+    );
+    assert_eq!(out.file_name().unwrap(), "doc Watermarked.pdf");
+    for (i, t) in page_texts(&out).iter().enumerate() {
+        assert!(t.contains(&format!("W page {}", i + 1)) && t.contains("DRAFT"), "{t}");
+    }
+    let centre = ink(&out, 0, (0.3, 0.4, 0.7, 0.6));
+    assert!(centre > blank + 200, "watermark across the middle ({blank} → {centre})");
+
+    let err = run_err(
+        "pdf.watermark",
+        vec![d.path().join("doc.pdf")],
+        Params::new().with("text", "  "),
+    );
+    assert!(err.contains("watermark text"), "{err}");
+}

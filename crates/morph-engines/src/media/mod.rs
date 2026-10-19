@@ -23,19 +23,16 @@ const VIDEO_OUT: &[(&str, &str, i32)] = &[
     ("mkv", "MKV", 3),
     ("webm", "WebM", 4),
     ("gif", "GIF", 5),
-    ("avi", "AVI", 7),
-    ("wmv", "WMV", 8),
 ];
 const AUDIO_OUT: &[(&str, &str, i32)] = &[
     ("mp3", "MP3", 6),
     ("m4a", "M4A", 10),
     ("wav", "WAV", 11),
     ("flac", "FLAC", 12),
-    ("ogg", "OGG", 13),
     ("opus", "Opus", 14),
-    ("aiff", "AIFF", 15),
-    ("wma", "WMA", 16),
 ];
+// AVI, WMV, OGG, AIFF and WMA are read, and tools keep them in their own format
+// (see `codec_args`), but they're no longer offered as conversion targets.
 
 pub fn register(reg: &mut Registry) {
     for (ext, label, order) in VIDEO_OUT {

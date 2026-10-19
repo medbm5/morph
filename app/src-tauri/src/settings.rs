@@ -144,6 +144,7 @@ pub fn layout_ops(state: State<AppState>, ring: Ring, family: Family) -> Vec<Lay
         .registry()
         .for_selection(&[kind], ring)
         .into_iter()
+        .filter(|o| !o.spec().unlisted)
         .map(|o| LayoutOp {
             id: o.spec().id.clone(),
             label: o.spec().label.clone(),
@@ -240,7 +241,13 @@ pub fn watch_ops(state: State<AppState>) -> Vec<WatchOp> {
         .all()
         .filter(|o| {
             let s = o.spec();
-            s.ring != Ring::Actions && s.arity == morph_core::Arity::Each
+            // Password tools need someone to type the password.
+            s.ring != Ring::Actions
+                && s.arity == morph_core::Arity::Each
+                && !s
+                    .params
+                    .iter()
+                    .any(|p| p.kind == morph_core::ParamKind::Password)
         })
         .map(|o| WatchOp {
             id: o.spec().id.clone(),

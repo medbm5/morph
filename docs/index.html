@@ -154,17 +154,17 @@
         <article class="card card-wide reveal">
           <p class="card-k"><kbd>Shift</kbd> Convert</p>
           <h3>Every format you actually use</h3>
-          <p>Images to JPG, PNG, WebP, AVIF, TIFF and PDF. PDFs to 300 DPI images, DOCX, text or Markdown. Video, audio, documents, slides, spreadsheets, subtitles and archives.</p>
+          <p>Images to JPG, PNG, WebP, AVIF, TIFF, ICO and PDF. PDFs to 300 DPI images, DOCX, text or Markdown. Video, audio, documents, slides, spreadsheets, subtitles and archives.</p>
         </article>
         <article class="card reveal">
           <p class="card-k"><kbd>Ctrl</kbd> Tools</p>
           <h3>Edit without an editor</h3>
-          <p>Compress to a target size, crop, annotate, add a background, trim video, normalise audio, merge PDFs.</p>
+          <p>Compress to a target size, resize, crop, rotate, add a background, trim or mute video, normalise audio, merge, split, number, watermark or password-protect PDFs.</p>
         </article>
         <article class="card reveal">
           <p class="card-k"><kbd>Alt</kbd> Actions</p>
           <h3>Move things along</h3>
-          <p>Share, copy, move, copy the path, open a terminal, or park files on the Float shelf.</p>
+          <p>Share, move to a folder, copy the path, open a terminal, or park files on the Float shelf.</p>
         </article>
         <article class="card reveal">
           <p class="card-k">Private</p>
@@ -188,13 +188,13 @@
     <section class="section" id="operations" aria-labelledby="operations-h">
       <div class="section-head reveal">
         <p class="label">03 — Operations</p>
-        <h2 id="operations-h" class="title">87 things it can do, out of the box.</h2>
+        <h2 id="operations-h" class="title">82 things it can do, out of the box.</h2>
       </div>
       <div class="tabs reveal" data-tabs>
         <div class="tab-list" role="tablist" aria-label="Ring">
-          <button role="tab" id="tab-ops-convert" aria-controls="panel-ops-convert" aria-selected="true">Convert <span class="tab-n">47</span></button>
-          <button role="tab" id="tab-ops-tools" aria-controls="panel-ops-tools" aria-selected="false" tabindex="-1">Tools <span class="tab-n">32</span></button>
-          <button role="tab" id="tab-ops-actions" aria-controls="panel-ops-actions" aria-selected="false" tabindex="-1">Actions <span class="tab-n">8</span></button>
+          <button role="tab" id="tab-ops-convert" aria-controls="panel-ops-convert" aria-selected="true">Convert</button>
+          <button role="tab" id="tab-ops-tools" aria-controls="panel-ops-tools" aria-selected="false" tabindex="-1">Tools</button>
+          <button role="tab" id="tab-ops-actions" aria-controls="panel-ops-actions" aria-selected="false" tabindex="-1">Actions</button>
         </div>
 
         <div class="tab-panel" role="tabpanel" id="panel-ops-convert" aria-labelledby="tab-ops-convert">
@@ -202,18 +202,18 @@
             <article class="ops-card">
               <h3>Images</h3>
               <p class="ops-from">JPG · PNG · WebP · AVIF · HEIC · TIFF · BMP · GIF · SVG · ICO</p>
-              <ul class="ops"><li>JPG</li><li>PNG</li><li>WebP</li><li>AVIF</li><li>TIFF</li><li>BMP</li><li>GIF</li><li>PDF <i>combines several</i></li></ul>
+              <ul class="ops"><li>JPG</li><li>PNG</li><li>WebP</li><li>AVIF</li><li>TIFF</li><li>ICO <i>16–256 px</i></li><li>PDF <i>combines several</i></li></ul>
             </article>
             <article class="ops-card">
               <h3>PDF</h3>
               <p class="ops-from">PDF</p>
-              <ul class="ops"><li>JPG</li><li>PNG</li><li>DOCX</li><li>PPTX</li><li>XLSX <i>beta</i></li><li>EPUB</li><li>Markdown</li><li>TXT</li></ul>
+              <ul class="ops"><li>JPG</li><li>PNG</li><li>DOCX</li><li>Markdown</li><li>TXT</li></ul>
             </article>
             <article class="ops-card">
               <h3>Documents</h3>
               <p class="ops-from">DOCX · ODT · RTF · Markdown · TXT · HTML · EPUB</p>
-              <ul class="ops"><li>DOCX</li><li>EPUB</li><li>HTML</li><li>Markdown</li><li>TXT</li></ul>
-              <p class="ops-needs">Needs pandoc</p>
+              <ul class="ops"><li>PDF <i>Markdown, HTML, TXT</i></li><li>DOCX</li><li>EPUB</li><li>HTML</li><li>Markdown</li><li>TXT</li></ul>
+              <p class="ops-needs">Needs pandoc (PDF also needs LibreOffice)</p>
             </article>
             <article class="ops-card">
               <h3>Office files</h3>
@@ -229,13 +229,13 @@
             <article class="ops-card">
               <h3>Video</h3>
               <p class="ops-from">Any video, plus animated GIF</p>
-              <ul class="ops"><li>MP4</li><li>MOV</li><li>MKV</li><li>WebM</li><li>AVI</li><li>WMV</li><li>GIF</li></ul>
+              <ul class="ops"><li>MP4</li><li>MOV</li><li>MKV</li><li>WebM</li><li>GIF</li></ul>
               <p class="ops-needs">Needs FFmpeg</p>
             </article>
             <article class="ops-card">
               <h3>Audio</h3>
               <p class="ops-from">Any audio, or the soundtrack of a video</p>
-              <ul class="ops"><li>MP3</li><li>M4A</li><li>FLAC</li><li>WAV</li><li>OGG</li><li>Opus</li><li>AIFF</li><li>WMA</li></ul>
+              <ul class="ops"><li>MP3</li><li>M4A</li><li>FLAC</li><li>WAV</li><li>Opus</li></ul>
               <p class="ops-needs">Needs FFmpeg</p>
             </article>
             <article class="ops-card">
@@ -250,26 +250,26 @@
           <div class="ops-grid">
             <article class="ops-card">
               <h3>Images</h3>
-              <ul class="ops"><li>Compress</li><li>Crop</li><li>Edit</li><li>Annotate</li><li>Redact</li><li>Add background</li><li>Remove background <i>AI</i></li><li>Collage</li><li>Copy text <i>OCR</i></li><li>Searchable PDF <i>OCR</i></li><li>Metadata</li><li>Strip metadata</li></ul>
+              <ul class="ops"><li>Compress</li><li>Resize</li><li>Crop</li><li>Rotate &amp; flip</li><li>Add background</li><li>Annotate</li><li>Remove background <i>AI</i></li><li>Redact</li><li>Copy text <i>OCR</i></li><li>Collage</li><li>Searchable PDF <i>OCR</i></li><li>Metadata <i>edit or strip</i></li><li>Edit <i>exposure, colour</i></li></ul>
               <p class="ops-needs">AI and OCR models are optional downloads</p>
             </article>
             <article class="ops-card">
               <h3>PDF</h3>
-              <ul class="ops"><li>Compress</li><li>Merge</li><li>Organize pages</li></ul>
+              <ul class="ops"><li>Compress</li><li>Merge</li><li>Split</li><li>Organize pages</li><li>Page numbers</li><li>Watermark</li><li>Protect <i>password</i></li><li>Unlock</li></ul>
             </article>
             <article class="ops-card">
               <h3>Video</h3>
-              <ul class="ops"><li>Trim</li><li>Split</li><li>Join</li><li>Crop</li><li>Speed</li><li>Redact</li><li>Save frames</li><li>Compress</li></ul>
+              <ul class="ops"><li>Compress</li><li>Trim</li><li>Crop</li><li>Rotate &amp; flip</li><li>Mute</li><li>Split</li><li>Join</li><li>Speed</li><li>Save frames</li><li>Redact</li></ul>
               <p class="ops-needs">Needs FFmpeg</p>
             </article>
             <article class="ops-card">
               <h3>Audio</h3>
-              <ul class="ops"><li>Trim</li><li>Normalize</li><li>Channels</li><li>Bleep</li><li>Visualizer</li><li>Compress</li></ul>
+              <ul class="ops"><li>Compress</li><li>Trim</li><li>Normalize</li><li>Visualizer</li></ul>
               <p class="ops-needs">Needs FFmpeg</p>
             </article>
             <article class="ops-card">
               <h3>Files and folders</h3>
-              <ul class="ops"><li>ZIP</li><li>TAR</li><li>TAR.GZ</li><li>Extract <i>ZIP, TAR, GZ, 7z, RAR</i></li></ul>
+              <ul class="ops"><li>ZIP</li><li>TAR.GZ <i>Linux</i></li><li>Extract <i>ZIP, TAR, GZ, 7z, RAR</i></li></ul>
             </article>
           </div>
         </div>
@@ -278,7 +278,7 @@
           <div class="ops-grid">
             <article class="ops-card">
               <h3>Any file or folder</h3>
-              <ul class="ops"><li>Share</li><li>Float shelf</li><li>Copy</li><li>Move</li><li>Copy path</li><li>Open terminal</li></ul>
+              <ul class="ops"><li>Share</li><li>Float shelf</li><li>Move to…</li><li>Copy path</li><li>Open terminal</li></ul>
             </article>
             <article class="ops-card">
               <h3>Built-in recipes</h3>

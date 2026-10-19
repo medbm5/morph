@@ -1,4 +1,4 @@
-//! Audio tools (S11): Normalize, Visualizer, Trim (with auto silence trim), Channels, Bleep.
+//! Audio tools (S11): Normalize, Visualizer, Trim (with auto silence trim).
 
 use super::ffmpeg::{self, Probe};
 use super::{muxer, AUDIO};
@@ -124,55 +124,6 @@ pub fn register(reg: &mut Registry) {
                 json!(-50.0),
             )),
     });
-    reg.register(Audio {
-        kind: Kind::Channels,
-        spec: tool("audio.channels", "Channels", "Channels", 5)
-            .param(ParamSpec::new(
-                "layout",
-                "Output",
-                choice(&["mono", "stereo"]),
-                json!("mono"),
-            ))
-            .param(ParamSpec::new(
-                "left_gain",
-                "Left gain (dB)",
-                ParamKind::Float {
-                    min: -30.0,
-                    max: 12.0,
-                    step: 0.5,
-                },
-                json!(0.0),
-            ))
-            .param(ParamSpec::new(
-                "right_gain",
-                "Right gain (dB)",
-                ParamKind::Float {
-                    min: -30.0,
-                    max: 12.0,
-                    step: 0.5,
-                },
-                json!(0.0),
-            )),
-    });
-    reg.register(Audio {
-        kind: Kind::Bleep,
-        spec: tool("audio.bleep", "Bleep", "Bleeped", 6)
-            .param(ParamSpec::new(
-                "ranges",
-                "Ranges",
-                ParamKind::Json,
-                json!([]),
-            ))
-            .param(ParamSpec::new(
-                "tone",
-                "Tone (Hz)",
-                ParamKind::Int {
-                    min: 200,
-                    max: 4000,
-                },
-                json!(1000),
-            )),
-    });
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -180,8 +131,6 @@ enum Kind {
     Normalize,
     Visualize,
     Trim,
-    Channels,
-    Bleep,
 }
 
 struct Audio {
@@ -289,43 +238,6 @@ impl Operation for Audio {
                 }
                 duration = end - start;
             }
-            Kind::Channels => {
-                let db = |k: &str| 10f64.powf(ctx.params.f64(k).unwrap_or(0.0) / 20.0);
-                let (l, r) = (db("left_gain"), db("right_gain"));
-                let stereo_in = p.audio.as_ref().is_some_and(|a| a.channels >= 2);
-                let (cl, cr) = if stereo_in {
-                    ("c0", "c1")
-                } else {
-                    ("c0", "c0")
-                };
-                let filter = if ctx.params.str("layout") == Some("stereo") {
-                    format!("pan=stereo|c0={l:.4}*{cl}|c1={r:.4}*{cr}")
-                } else {
-                    format!("pan=mono|c0={:.4}*{cl}+{:.4}*{cr}", l * 0.5, r * 0.5)
-                };
-                args.extend(["-map".into(), "0:a:0".into(), "-af".into(), filter]);
-            }
-            Kind::Bleep => {
-                let ranges = ctx
-                    .params
-                    .get("ranges")
-                    .and_then(Value::as_array)
-                    .cloned()
-                    .unwrap_or_default();
-                let cond = bleep_condition(&ranges)?;
-                let tone = ctx.params.u32("tone").unwrap_or(1000);
-                let sr = p
-                    .audio
-                    .as_ref()
-                    .map(|a| a.sample_rate)
-                    .filter(|&r| r > 0)
-                    .unwrap_or(48000);
-                let graph = format!(
-                    "[0:a:0]volume=volume='if({cond},0,1)':eval=frame[m];sine=f={tone}:r={sr}:d={:.3},volume=volume='if({cond},0.35,0)':eval=frame[b];[m][b]amix=inputs=2:duration=first:normalize=0[a]",
-                    p.duration
-                );
-                args.extend(["-filter_complex".into(), graph, "-map".into(), "[a]".into()]);
-            }
             Kind::Visualize => return visualize(ctx, input, &p),
         }
         args.extend(audio_codec(&ext));
@@ -340,27 +252,6 @@ impl Operation for Audio {
         ffmpeg::run(&full, duration, ctx.progress)?;
         Ok(vec![out.commit()?])
     }
-}
-
-fn bleep_condition(ranges: &[Value]) -> Result<String> {
-    let mut parts = Vec::new();
-    for r in ranges {
-        let t = |k: &str| -> Result<f64> {
-            match r.get(k) {
-                Some(Value::Number(n)) => Ok(n.as_f64().unwrap_or(0.0)),
-                Some(Value::String(s)) => parse_time(s),
-                _ => bail!("range needs `{k}`"),
-            }
-        };
-        let (a, b) = (t("start")?, t("end")?);
-        if b > a {
-            parts.push(format!("between(t,{a:.3},{b:.3})"));
-        }
-    }
-    if parts.is_empty() {
-        bail!("add at least one range to bleep");
-    }
-    Ok(parts.join("+"))
 }
 
 fn visualize(ctx: &OpContext, input: &Path, p: &Probe) -> Result<Vec<PathBuf>> {

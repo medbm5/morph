@@ -1,4 +1,4 @@
-//! Image tools I (S5): Compress, Crop, Metadata, Strip metadata.
+//! Image tools I (S5): Compress, Resize, Crop, Rotate, Metadata, Strip metadata.
 
 use super::encode::{self, EncodeOptions};
 use super::{compress, crop, decode, metadata, INPUTS};
@@ -77,6 +77,62 @@ pub fn register(reg: &mut Registry) {
             json!(100),
         )),
     });
+    reg.register(Resize {
+        spec: OpSpec::tool(
+            "image.resize",
+            "Resize",
+            "Resized",
+            INPUTS,
+            OutputKind::SameAsInput,
+        )
+        .order(2)
+        .editor("form")
+        .param(
+            ParamSpec::new(
+                "percent",
+                "Scale %",
+                ParamKind::Int { min: 1, max: 400 },
+                json!(50),
+            )
+            .help("Used when width and height are both 0"),
+        )
+        .param(
+            ParamSpec::new(
+                "width",
+                "Width",
+                ParamKind::Int { min: 0, max: 32768 },
+                json!(0),
+            )
+            .help("Pixels; 0 = follow the height"),
+        )
+        .param(
+            ParamSpec::new(
+                "height",
+                "Height",
+                ParamKind::Int { min: 0, max: 32768 },
+                json!(0),
+            )
+            .help("Pixels; 0 = follow the width. Both set: fit inside, keeping the shape"),
+        ),
+    });
+    reg.register(Rotate {
+        spec: OpSpec::tool(
+            "image.rotate",
+            "Rotate",
+            "Rotated",
+            INPUTS,
+            OutputKind::SameAsInput,
+        )
+        .order(4)
+        .editor("form")
+        .quick()
+        .param(ParamSpec::new(
+            "turn",
+            "Turn",
+            choice(ROTATIONS),
+            json!("right"),
+        )),
+    });
     reg.register(Crop {
         spec: OpSpec::tool(
             "image.crop",
@@ -85,7 +141,7 @@ pub fn register(reg: &mut Registry) {
             INPUTS,
             OutputKind::SameAsInput,
         )
-        .order(6)
+        .order(3)
         .editor("crop")
         .param(ParamSpec::new(
             "ratio",
@@ -157,7 +213,7 @@ pub fn register(reg: &mut Registry) {
             meta_inputs,
             OutputKind::SameAsInput,
         )
-        .order(2)
+        .order(12)
         .editor("metadata")
         .param(ParamSpec::new("set", "Fields", ParamKind::Json, json!({})))
         .param(ParamSpec::new(
@@ -181,7 +237,9 @@ pub fn register(reg: &mut Registry) {
             meta_inputs,
             OutputKind::SameAsInput,
         )
-        .order(20),
+        .order(20)
+        // Reached through Metadata's STRIP ALL, recipes and `morph tool strip`.
+        .unlisted(),
     });
 }
 
@@ -237,6 +295,95 @@ impl Operation for Compress {
     }
 }
 
+/// Rotate / flip choices, shared with video.
+pub const ROTATIONS: &[&str] = &["right", "left", "180", "flip-horizontal", "flip-vertical"];
+
+/// New size for Resize: a box (either side may be 0 = keep the ratio) or a percentage.
+pub fn resize_target(w: u32, h: u32, width: u32, height: u32, percent: u32) -> (u32, u32) {
+    let f = match (width, height) {
+        (0, 0) => percent.clamp(1, 400) as f64 / 100.0,
+        (bw, 0) => bw as f64 / w as f64,
+        (0, bh) => bh as f64 / h as f64,
+        (bw, bh) => (bw as f64 / w as f64).min(bh as f64 / h as f64),
+    };
+    (
+        ((w as f64 * f).round() as u32).max(1),
+        ((h as f64 * f).round() as u32).max(1),
+    )
+}
+
+/// Save a tool result in the input's format.
+fn save(ctx: &OpContext, img: &image::DynamicImage) -> Result<Vec<PathBuf>> {
+    let input = ctx.input();
+    let ext = tool_output_ext(ctx.kind());
+    let out = ctx.sink.file(input, ext)?;
+    encode::encode(
+        img,
+        ext,
+        out.path(),
+        &EncodeOptions {
+            quality: 95,
+            ..Default::default()
+        },
+    )?;
+    Ok(vec![out.commit()?])
+}
+
+struct Resize {
+    spec: OpSpec,
+}
+
+impl Operation for Resize {
+    fn spec(&self) -> &OpSpec {
+        &self.spec
+    }
+
+    fn run(&self, ctx: &OpContext) -> Result<Vec<PathBuf>> {
+        use image::GenericImageView;
+        let img = decode::decode(ctx.input(), ctx.kind())?;
+        let (w, h) = img.dimensions();
+        let p = &ctx.params;
+        let (nw, nh) = resize_target(
+            w,
+            h,
+            p.u32("width").unwrap_or(0),
+            p.u32("height").unwrap_or(0),
+            p.u32("percent").unwrap_or(50),
+        );
+        ctx.progress.set(0.3);
+        let img = if (nw, nh) == (w, h) {
+            img
+        } else {
+            img.resize_exact(nw, nh, image::imageops::FilterType::Lanczos3)
+        };
+        ctx.progress.check()?;
+        save(ctx, &img)
+    }
+}
+
+struct Rotate {
+    spec: OpSpec,
+}
+
+impl Operation for Rotate {
+    fn spec(&self) -> &OpSpec {
+        &self.spec
+    }
+
+    fn run(&self, ctx: &OpContext) -> Result<Vec<PathBuf>> {
+        let img = decode::decode(ctx.input(), ctx.kind())?;
+        let img = match ctx.params.str("turn").unwrap_or("right") {
+            "right" => img.rotate90(),
+            "left" => img.rotate270(),
+            "180" => img.rotate180(),
+            "flip-horizontal" => img.fliph(),
+            "flip-vertical" => img.flipv(),
+            other => anyhow::bail!("unknown turn `{other}`"),
+        };
+        save(ctx, &img)
+    }
+}
+
 struct Crop {
     spec: OpSpec,
 }
@@ -272,18 +419,7 @@ impl Operation for Crop {
         };
         let out_size = (ow > 0 && oh > 0).then_some((ow, oh));
         let cropped = crop::crop(&img, rect, out_size)?;
-        let ext = tool_output_ext(ctx.kind());
-        let out = ctx.sink.file(input, ext)?;
-        encode::encode(
-            &cropped,
-            ext,
-            out.path(),
-            &EncodeOptions {
-                quality: 95,
-                ..Default::default()
-            },
-        )?;
-        Ok(vec![out.commit()?])
+        save(ctx, &cropped)
     }
 }
 

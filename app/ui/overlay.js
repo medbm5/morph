@@ -155,7 +155,7 @@
       ring.toast(`<b>${L.t('toast.install', 'INSTALL COMPONENT')}</b> · ${item.component || item.label}`, { ms: 1400, onHide: close });
       return;
     }
-    if (item.editor) {
+    if (item.editor && !item.quick) {
       invoke('open_editor', { op: item.id, paths: onPaths });
       ring.collapse();
       setTimeout(close, 200);
