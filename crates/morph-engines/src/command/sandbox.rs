@@ -57,9 +57,7 @@ pub fn confined() -> bool {
 #[cfg(target_os = "linux")]
 mod imp {
     use super::*;
-    use landlock::{
-        Access, AccessFs, PathBeneath, PathFd, Ruleset, RulesetAttr, RulesetCreatedAttr, ABI,
-    };
+    use landlock::{AccessFs, PathBeneath, PathFd, Ruleset, RulesetAttr, RulesetCreatedAttr, ABI};
     use std::os::unix::process::CommandExt;
     use std::process::{Command, Stdio};
     use std::time::Duration;
