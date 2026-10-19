@@ -75,7 +75,7 @@
 
   }
 
-  /* ---------- Install tabs ---------- */
+  /* ---------- Tabs (install, operations) ---------- */
   document.querySelectorAll('[data-tabs]').forEach((tabs) => {
     const list = [...tabs.querySelectorAll('[role="tab"]')];
     const panels = list.map((t) => document.getElementById(t.getAttribute('aria-controls')));
@@ -90,7 +90,7 @@
     };
     // Default to Linux tab for Linux visitors.
     const isLinux = /Linux/.test(navigator.userAgent) && !/Android/.test(navigator.userAgent);
-    select(isLinux ? 1 : 0, false);
+    select(isLinux && tabs.dataset.tabs === 'os' ? 1 : 0, false);
     list.forEach((t, i) => {
       t.addEventListener('click', () => select(i, false));
       t.addEventListener('keydown', (e) => {

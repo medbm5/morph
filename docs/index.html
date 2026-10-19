@@ -37,6 +37,7 @@
       <ul>
         <li><a href="#how">How it works</a></li>
         <li><a href="#features">Features</a></li>
+        <li><a href="#operations">Operations</a></li>
         <li><a href="#install">Install</a></li>
         <li><a href="#faq">FAQ</a></li>
       </ul>
@@ -183,13 +184,123 @@
       </div>
     </section>
 
+    <!-- OPERATIONS -->
+    <section class="section" id="operations" aria-labelledby="operations-h">
+      <div class="section-head reveal">
+        <p class="label">03 — Operations</p>
+        <h2 id="operations-h" class="title">87 things it can do, out of the box.</h2>
+      </div>
+      <div class="tabs reveal" data-tabs>
+        <div class="tab-list" role="tablist" aria-label="Ring">
+          <button role="tab" id="tab-ops-convert" aria-controls="panel-ops-convert" aria-selected="true">Convert <span class="tab-n">47</span></button>
+          <button role="tab" id="tab-ops-tools" aria-controls="panel-ops-tools" aria-selected="false" tabindex="-1">Tools <span class="tab-n">32</span></button>
+          <button role="tab" id="tab-ops-actions" aria-controls="panel-ops-actions" aria-selected="false" tabindex="-1">Actions <span class="tab-n">8</span></button>
+        </div>
+
+        <div class="tab-panel" role="tabpanel" id="panel-ops-convert" aria-labelledby="tab-ops-convert">
+          <div class="ops-grid">
+            <article class="ops-card">
+              <h3>Images</h3>
+              <p class="ops-from">JPG · PNG · WebP · AVIF · HEIC · TIFF · BMP · GIF · SVG · ICO</p>
+              <ul class="ops"><li>JPG</li><li>PNG</li><li>WebP</li><li>AVIF</li><li>TIFF</li><li>BMP</li><li>GIF</li><li>PDF <i>combines several</i></li></ul>
+            </article>
+            <article class="ops-card">
+              <h3>PDF</h3>
+              <p class="ops-from">PDF</p>
+              <ul class="ops"><li>JPG</li><li>PNG</li><li>DOCX</li><li>PPTX</li><li>XLSX <i>beta</i></li><li>EPUB</li><li>Markdown</li><li>TXT</li></ul>
+            </article>
+            <article class="ops-card">
+              <h3>Documents</h3>
+              <p class="ops-from">DOCX · ODT · RTF · Markdown · TXT · HTML · EPUB</p>
+              <ul class="ops"><li>DOCX</li><li>EPUB</li><li>HTML</li><li>Markdown</li><li>TXT</li></ul>
+              <p class="ops-needs">Needs pandoc</p>
+            </article>
+            <article class="ops-card">
+              <h3>Office files</h3>
+              <p class="ops-from">Word · PowerPoint · Excel · OpenDocument · Pages · Keynote · CSV</p>
+              <ul class="ops"><li>PDF</li><li>Slides to JPG</li><li>Slides to PNG</li><li>Pages to DOCX</li></ul>
+              <p class="ops-needs">Needs LibreOffice</p>
+            </article>
+            <article class="ops-card">
+              <h3>Spreadsheets</h3>
+              <p class="ops-from">XLSX · XLS · ODS · CSV · TSV</p>
+              <ul class="ops"><li>XLSX</li><li>ODS</li><li>CSV</li><li>TSV</li></ul>
+            </article>
+            <article class="ops-card">
+              <h3>Video</h3>
+              <p class="ops-from">Any video, plus animated GIF</p>
+              <ul class="ops"><li>MP4</li><li>MOV</li><li>MKV</li><li>WebM</li><li>AVI</li><li>WMV</li><li>GIF</li></ul>
+              <p class="ops-needs">Needs FFmpeg</p>
+            </article>
+            <article class="ops-card">
+              <h3>Audio</h3>
+              <p class="ops-from">Any audio, or the soundtrack of a video</p>
+              <ul class="ops"><li>MP3</li><li>M4A</li><li>FLAC</li><li>WAV</li><li>OGG</li><li>Opus</li><li>AIFF</li><li>WMA</li></ul>
+              <p class="ops-needs">Needs FFmpeg</p>
+            </article>
+            <article class="ops-card">
+              <h3>Subtitles</h3>
+              <p class="ops-from">SRT · VTT</p>
+              <ul class="ops"><li>SRT</li><li>VTT</li><li>TXT</li></ul>
+            </article>
+          </div>
+        </div>
+
+        <div class="tab-panel" role="tabpanel" id="panel-ops-tools" aria-labelledby="tab-ops-tools" hidden>
+          <div class="ops-grid">
+            <article class="ops-card">
+              <h3>Images</h3>
+              <ul class="ops"><li>Compress</li><li>Crop</li><li>Edit</li><li>Annotate</li><li>Redact</li><li>Add background</li><li>Remove background <i>AI</i></li><li>Collage</li><li>Copy text <i>OCR</i></li><li>Searchable PDF <i>OCR</i></li><li>Metadata</li><li>Strip metadata</li></ul>
+              <p class="ops-needs">AI and OCR models are optional downloads</p>
+            </article>
+            <article class="ops-card">
+              <h3>PDF</h3>
+              <ul class="ops"><li>Compress</li><li>Merge</li><li>Organize pages</li></ul>
+            </article>
+            <article class="ops-card">
+              <h3>Video</h3>
+              <ul class="ops"><li>Trim</li><li>Split</li><li>Join</li><li>Crop</li><li>Speed</li><li>Redact</li><li>Save frames</li><li>Compress</li></ul>
+              <p class="ops-needs">Needs FFmpeg</p>
+            </article>
+            <article class="ops-card">
+              <h3>Audio</h3>
+              <ul class="ops"><li>Trim</li><li>Normalize</li><li>Channels</li><li>Bleep</li><li>Visualizer</li><li>Compress</li></ul>
+              <p class="ops-needs">Needs FFmpeg</p>
+            </article>
+            <article class="ops-card">
+              <h3>Files and folders</h3>
+              <ul class="ops"><li>ZIP</li><li>TAR</li><li>TAR.GZ</li><li>Extract <i>ZIP, TAR, GZ, 7z, RAR</i></li></ul>
+            </article>
+          </div>
+        </div>
+
+        <div class="tab-panel" role="tabpanel" id="panel-ops-actions" aria-labelledby="tab-ops-actions" hidden>
+          <div class="ops-grid">
+            <article class="ops-card">
+              <h3>Any file or folder</h3>
+              <ul class="ops"><li>Share</li><li>Float shelf</li><li>Copy</li><li>Move</li><li>Copy path</li><li>Open terminal</li></ul>
+            </article>
+            <article class="ops-card">
+              <h3>Built-in recipes</h3>
+              <ul class="ops ops-recipes">
+                <li><b>Square post</b> <i>JPG, crop 1:1, soft background</i></li>
+                <li><b>Web ready</b> <i>strip metadata, WebP under 500 KB, max 1920 px</i></li>
+              </ul>
+              <p class="ops-needs">Save your own chains as recipes</p>
+            </article>
+          </div>
+        </div>
+      </div>
+      <p class="note reveal">The ring only shows what fits the file you're dragging. Add your own tools by wrapping ImageMagick, FFmpeg or any script in a short text file.</p>
+    </section>
+
     <!-- INSTALL -->
     <section class="section" id="install" aria-labelledby="install-h">
       <div class="section-head reveal">
-        <p class="label">03 — Install</p>
+        <p class="label">04 — Install</p>
         <h2 id="install-h" class="title">Ready in a minute.</h2>
       </div>
-      <div class="tabs reveal" data-tabs>
+      <div class="tabs reveal" data-tabs="os">
         <div class="tab-list" role="tablist" aria-label="Operating system">
           <button role="tab" id="tab-win" aria-controls="panel-win" aria-selected="true">Windows</button>
           <button role="tab" id="tab-linux" aria-controls="panel-linux" aria-selected="false" tabindex="-1">Linux</button>
@@ -229,7 +340,7 @@
     <!-- WAYLAND -->
     <section class="section split" id="wayland" aria-labelledby="wayland-h">
       <div class="reveal">
-        <p class="label">04 — Wayland</p>
+        <p class="label">05 — Wayland</p>
         <h2 id="wayland-h" class="title title-sm">On Wayland, the ring waits at the edge.</h2>
         <p>Wayland doesn't let apps watch your keyboard while you drag in another window. So on Wayland you get a <b>drop dock</b>: a small circle at the screen edge. Drag files onto it and it opens into the ring. Hover <i>Convert</i>, <i>Tools</i> or <i>Actions</i> to switch.</p>
         <ul class="ticks">
@@ -249,7 +360,7 @@
     <!-- FAQ -->
     <section class="section faq" id="faq" aria-labelledby="faq-h">
       <div class="section-head reveal">
-        <p class="label">05 — FAQ</p>
+        <p class="label">06 — FAQ</p>
         <h2 id="faq-h" class="title">Questions.</h2>
       </div>
       <div class="faq-list reveal">
