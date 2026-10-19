@@ -437,10 +437,16 @@ fn watermark_crosses_the_page() {
     );
     assert_eq!(out.file_name().unwrap(), "doc Watermarked.pdf");
     for (i, t) in page_texts(&out).iter().enumerate() {
-        assert!(t.contains(&format!("W page {}", i + 1)) && t.contains("DRAFT"), "{t}");
+        assert!(
+            t.contains(&format!("W page {}", i + 1)) && t.contains("DRAFT"),
+            "{t}"
+        );
     }
     let centre = ink(&out, 0, (0.3, 0.4, 0.7, 0.6));
-    assert!(centre > blank + 200, "watermark across the middle ({blank} → {centre})");
+    assert!(
+        centre > blank + 200,
+        "watermark across the middle ({blank} → {centre})"
+    );
 
     let err = run_err(
         "pdf.watermark",
